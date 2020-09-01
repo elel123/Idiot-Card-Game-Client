@@ -48,10 +48,7 @@ class Game extends Component {
     cardPlayHandler = (card, fromUntouched) => {
         console.log(card, fromUntouched);
         if (this.state.gameEnded) {
-            this.setState({
-                popUpMsg : "The game has ended. Please return to the lobby.",
-                popUp : true
-            });
+            this.displayGameEndedMessage();
             return;
         }
         //Prevent the player from playing another card after having played a hidden card.
@@ -289,6 +286,11 @@ class Game extends Component {
             return;
         }
 
+        if (this.state.gameEnded) {
+            this.displayGameEndedMessage();
+            return;
+        }
+
         //Check to see if the player has reach their hidden cards
         if (this.props.hand.length > 0 || this.props.deck > 0 ||
             this.props.untouched_hand[0] !== -1 || this.props.untouched_hand[1] !== -1 ||
@@ -456,7 +458,9 @@ class Game extends Component {
     }
 
     takeFromCenterHandler = () => {
-        if (!this.state.everyoneSwapped) {
+        if (this.state.gameEnded) {
+            this.displayGameEndedMessage();
+        } else if (!this.state.everyoneSwapped) {
             this.setState({
                 popUpMsg : "The swapping phase hasn't ended yet!",
                 popUp : true
@@ -556,6 +560,18 @@ class Game extends Component {
             popUpMsg : (
                 <Container>
                     <Row><Col><div className="center-div">{message}</div></Col></Row>
+                    <Row><Col><div className="center-div"><Button className="take-center-btn" onClick={this.returnHomeHandler} variant="secondary" size="sm">Leave Game</Button></div></Col></Row>
+                </Container>
+            ),
+            popUp : true
+        });
+    }
+
+    displayGameEndedMessage = (winner) => {
+        this.setState({
+            popUpMsg : (
+                <Container>
+                    <Row><Col><div className="center-div">The game has ended.</div></Col></Row>
                     <Row><Col><div className="center-div"><Button className="take-center-btn" onClick={this.returnHomeHandler} variant="secondary" size="sm">Leave Game</Button></div></Col></Row>
                 </Container>
             ),
@@ -1031,6 +1047,7 @@ class Game extends Component {
                 </Container>
             )
         } else {
+            this.displayInactivityMessage();
             return (
                 <div>Hello.</div>
             )
