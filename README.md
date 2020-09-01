@@ -1,3 +1,7 @@
+The server-side repository can be found [here](https://github.com/elel123/Idiot-Card-Game-Server).
+
+<hr />
+
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
 ## Available Scripts
