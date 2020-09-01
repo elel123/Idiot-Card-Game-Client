@@ -1,0 +1,12 @@
+.chat-box {
+    text-align: left;
+    height: 250px;
+    margin-top: 35px;
+    background-color: rgb(236, 236, 236);
+    font-size: 14px;
+    font-family: 'Balsamiq Sans', cursive;
+}
+
+.admin-message {
+    color: blue;
+}

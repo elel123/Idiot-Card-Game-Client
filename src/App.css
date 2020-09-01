@@ -1,5 +1,6 @@
 .App {
   text-align: center;
+  /* background-color: rgb(144, 185, 172); */
 }
 
 .App-logo {
@@ -35,4 +36,66 @@
   to {
     transform: rotate(360deg);
   }
+}
+
+.header {
+    text-align: center;
+    font-family: 'Josefin Sans', sans-serif;
+}
+
+.home-btn {
+    margin-left: 2px;
+    margin-right: 2px;
+}
+
+.swap-btn {
+    margin-left: 2px;
+    margin-right: 2px;
+    margin-top: 135px;
+    float: right;
+}
+
+.input-field {
+    width: 50% !important;
+    margin-right: auto;
+    margin-left: auto;
+}
+
+.player-list .remove-button, .player-list p {
+    font-size: large;
+    display: inline-block;
+    margin-left: 10px;
+    margin-right: 10px;   
+}
+
+.game-board {
+    width: 100%;
+}
+
+.game-board, .game-board th, .game-board td {
+    border: 1px solid black;
+  }
+
+.player-names {
+    text-align: left;
+}
+
+.hidden-line {
+    clear: both; 
+    visibility: hidden; 
+}
+
+.take-center-btn {
+    float: left;
+}
+
+.center-div {
+    display: flex;
+    justify-content: center;
+
+}
+
+.help-btn {
+    margin-top: 5px;
+    float: right;
 }
