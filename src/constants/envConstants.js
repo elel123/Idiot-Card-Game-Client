@@ -1,4 +1,4 @@
-export const SERVER = (route) => {return process.env.SERVER_URL + route;} 
+export const SERVER = (route) => {return "https://eho-card-game-backend.herokuapp.com/" + route;} 
 
 export const LOCAL_SERVER = "http://localhost:4000/";
 
