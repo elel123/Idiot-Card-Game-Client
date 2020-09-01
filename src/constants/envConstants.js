@@ -1,4 +1,4 @@
-export const SERVER = (route) => {return "http://localhost:4000/" + route;} 
+export const SERVER = (route) => {return process.env.SERVER_URL + route;} 
 
 export const LOCAL_SERVER = "http://localhost:4000/";
 
