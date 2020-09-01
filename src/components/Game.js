@@ -1048,13 +1048,15 @@ class Game extends Component {
             )
         } else {
             return (
-                <hr className="hidden-line"></hr>
-                <hr className="hidden-line"></hr>
-                <hr className="hidden-line"></hr>
-                <Container>
-                    <Row><Col><div className="center-div">Game data lost due to inactivity or page refresh.</div></Col></Row>
-                    <Row><Col><div className="center-div"><Button className="take-center-btn" onClick={this.returnHomeHandler} variant="secondary" size="sm">Leave Game</Button></div></Col></Row>
-                </Container>
+                <>
+                    <hr className="hidden-line"></hr>
+                    <hr className="hidden-line"></hr>
+                    <hr className="hidden-line"></hr>
+                    <Container>
+                        <Row><Col><div className="center-div">Game data lost due to inactivity or page refresh.</div></Col></Row>
+                        <Row><Col><div className="center-div"><Button className="take-center-btn" onClick={this.returnHomeHandler} variant="secondary" size="sm">Leave Game</Button></div></Col></Row>
+                    </Container>
+                </>
             )
         }
 
