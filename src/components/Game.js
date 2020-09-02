@@ -590,10 +590,17 @@ class Game extends Component {
                         This game in a way is similar to Deuce (Big 2) where the goal is to try to get rid of 
                         all of your cards. However, in this game there are power cards (2, 3, 7, 10) which can beat 
                         any card and have special effects. This would mean that the lowest card is actually a 4,
-                        and the highest card is an Ace (suits do not matter). For the effects of the power cards,
+                        and the highest card is an Ace (suits do not matter). 
+                    </Row>
+                    <Row>
+                        For the effects of the power cards,
                         2 allows you to go again, 3 mirrors the card that's below it (but doesn't mirror a 2),
                         7 forces the next player to play a card that is below 7 (power cards, or 4, 5, 6), and 10
-                        burns the play pile (moves everything to the discard). If there is a card you cannot beat in
+                        burns the play pile (moves everything to the discard). A four-of-kind on the play pile will also be a burn 
+                        (this includes using 3 as mirrors);
+                    </Row>
+                    <Row>
+                        If there is a card you cannot beat in
                         the center, you must take the center cards to end your turn (click the play pile). 
                         Draw a card after every play, and once the deck runs out (including your hand), start 
                         playing the face-up table cards, and then the face-down table cards. In the beginning phase
@@ -612,6 +619,22 @@ class Game extends Component {
             ),
             popUp : true
         });
+    }
+
+    displayWarningLeaveMessage = () => {
+        if (this.state.gameEnded) {
+            this.returnHomeHandler();
+        } else {
+            this.setState({
+                popUpMsg : (
+                    <Container>
+                        <Row><Col><div className="center-div">Leaving the room midgame will cause the game to halt for the other players during your turn.</div></Col></Row>
+                        <Row><Col><div className="center-div"><Button className="take-center-btn" onClick={this.returnHomeHandler} variant="secondary" size="sm">Leave?</Button></div></Col></Row>
+                    </Container>
+                ),
+                popUp : true
+            });
+        }
     }
 
     componentDidMount() {
@@ -813,8 +836,14 @@ class Game extends Component {
         )
     }
 
-    formatHelpButtonDisplay = () => {
-        return (<Button className="help-btn" onClick={this.displayHelpMessage} variant="secondary">Help</Button>);
+    formatTopButtonDisplays = () => {
+        return (
+            <>
+                <Button className="help-btn" onClick={this.displayHelpMessage} variant="secondary">Help</Button>
+                <Button className="help-btn" onClick={this.displayWarningLeaveMessage} variant="secondary">Leave Game</Button>
+            </>
+        );
+
     }
 
     render() {
@@ -901,7 +930,7 @@ class Game extends Component {
                             <Col>
                                 {this.formatPlayerDisplay(playerNames[1], playerCards[1], playerNumCards[1], playerSwapped[1])}
                             </Col>
-                            <Col>{this.formatHelpButtonDisplay()}</Col>
+                            <Col>{this.formatTopButtonDisplays()}</Col>
                         </Row>
                         <Row><hr></hr></Row>
                         <Row><hr></hr></Row>
@@ -957,7 +986,7 @@ class Game extends Component {
                             <Col>
                                 {this.formatPlayerDisplay(playerNames[2], playerCards[2], playerNumCards[2], playerSwapped[2])}
                             </Col>
-                            <Col>{this.formatHelpButtonDisplay()}</Col>
+                            <Col>{this.formatTopButtonDisplays()}</Col>
                         </Row>
                         <Row><hr></hr></Row>
                         <Row><hr></hr></Row>
@@ -1010,7 +1039,7 @@ class Game extends Component {
                             <Col>
                                 {this.formatPlayerDisplay(playerNames[2], playerCards[2], playerNumCards[2], playerSwapped[2])}
                             </Col>
-                            <Col>{this.formatHelpButtonDisplay()}</Col>
+                            <Col>{this.formatTopButtonDisplays()}</Col>
                         </Row>
                         <Row><hr></hr></Row>
                         <Row><hr></hr></Row>

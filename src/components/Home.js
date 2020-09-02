@@ -36,7 +36,17 @@ class Home extends Component {
     }
 
     handleFindRoom = (event) => {
-        if (this.state.username === "") {
+        if (this.state.username.length > 30) {
+            this.setState({
+                popUpMsg: "Please enter a shorter username",
+                popUp: true
+            });
+        } else if (!this.state.username.replace(/\s/g, '').length) {
+            this.setState({
+                popUpMsg: "Please enter a valid username",
+                popUp: true
+            });
+        } else if (this.state.username === "" ) {
             this.setState({
                 popUpMsg: "Please enter a username",
                 popUp: true
@@ -81,6 +91,22 @@ class Home extends Component {
     }
 
     handleCreateRoom = (event) => {
+        if (this.state.username.length > 30) {
+            this.setState({
+                popUpMsg: "Please enter a shorter username",
+                popUp: true
+            });
+            return;
+        }  
+        
+        if (!this.state.username.replace(/\s/g, '').length) {
+            this.setState({
+                popUpMsg: "Please enter a valid username",
+                popUp: true
+            });
+            return;
+        }
+
         if (this.state.username === "") {
             this.setState({
                 popUpMsg: "Please enter a username",
