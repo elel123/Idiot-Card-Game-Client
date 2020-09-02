@@ -95,6 +95,10 @@
 
 }
 
+.left-div {
+    text-align: left;
+}
+
 .help-btn {
     margin-top: 5px;
     margin-left: 10px;

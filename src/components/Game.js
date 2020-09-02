@@ -267,6 +267,7 @@ class Game extends Component {
                         if (res.data.everyone_ready) {
                             this.setState({everyoneSwapped : true});
                             this.props.updateMessages([...this.props.messages, {username : "", message : "Everyone is ready. Let the game start!"}]);
+                            this.props.updateMessages([...this.props.messages, {username : "", message : "Follow the ☞ emoji next to players' names to see who's turn it is!"}]);
                             console.log(this.state);
                         }
                         //Notify other players
@@ -533,6 +534,9 @@ class Game extends Component {
     }
     
     returnHomeHandler = () => {
+        if (!this.state.gameEnded) {
+            socket.emit('leave-game', {"username" : this.props.username, "game_id" : this.props.game_id});
+        }
         socket.emit('disconnect');
         socket.off();
         this.props.resetState();
@@ -567,6 +571,7 @@ class Game extends Component {
             ),
             popUp : true
         });
+        this.props.updateMessages([...this.props.messages, {username : "", message : `${winner} has won! Please click the 'Leave Room' button to return to the home screen.`}]);
     }
 
     displayGameEndedMessage = (winner) => {
@@ -587,28 +592,27 @@ class Game extends Component {
                 <Container>
                     <Row><Col><div className="center-div"><b>How to play Burn/Idiot</b></div></Col></Row>
                     <Row>
-                        This game in a way is similar to Deuce (Big 2) where the goal is to try to get rid of 
-                        all of your cards. However, in this game there are power cards (2, 3, 7, 10) which can beat 
-                        any card and have special effects. This would mean that the lowest card is actually a 4,
-                        and the highest card is an Ace (suits do not matter). 
-                    </Row>
-                    <Row>
-                        For the effects of the power cards,
-                        2 allows you to go again, 3 mirrors the card that's below it (but doesn't mirror a 2),
-                        7 forces the next player to play a card that is below 7 (power cards, or 4, 5, 6), and 10
-                        burns the play pile (moves everything to the discard). A four-of-kind on the play pile will also be a burn 
-                        (this includes using 3 as mirrors);
-                    </Row>
-                    <Row>
-                        If there is a card you cannot beat in
-                        the center, you must take the center cards to end your turn (click the play pile). 
-                        Draw a card after every play, and once the deck runs out (including your hand), start 
-                        playing the face-up table cards, and then the face-down table cards. In the beginning phase
-                        of the game, players are allowed to swap cards in their hand with their cards face-up on the table.
-                        Since those face-up cards are going to be played near the end-game, it is in your best interest
-                        to swap some decently powerful cards to the table. (Click the cards you want to swap and they will
-                        appear blue. Click the swap button once done.)
-                        The winner is the one who has no more cards left.
+                        <div className="left-div">
+                            This game in a way is similar to Deuce (Big 2) where the goal is to try to get rid of 
+                            all of your cards. However, in this game there are power cards (2, 3, 7, 10) which can beat 
+                            any card and have special effects. This would mean that the lowest card is actually a 4,
+                            and the highest card is an Ace (suits do not matter). <br></br>
+                            For the effects of the power cards: <br></br>
+                            <u>2 allows you to go again</u><br></br> 
+                            <u>3 mirrors the card that's below it (but doesn't mirror a 2)</u><br></br>
+                            <u>7 forces the next player to play a card that is below 7 (power cards, or 4, 5, 6)</u><br></br>
+                            <u>10 burns the play pile (moves everything to the discard)</u><br></br>
+                            <u>A four-of-kind on the play pile will also be a burn (this includes using 3 as mirrors);</u><br></br>
+                            If there is a card you cannot beat in
+                            the center, you must take the center cards to end your turn (click the play pile). 
+                            Draw a card after every play, and once the deck runs out (including your hand), start 
+                            playing the face-up table cards, and then the face-down table cards. In the beginning phase
+                            of the game, players are allowed to swap cards in their hand with their cards face-up on the table.
+                            Since those face-up cards are going to be played near the end-game, it is in your best interest
+                            to swap some decently powerful cards to the table. (Click the cards you want to swap and they will
+                            appear blue. Click the swap button once done.)
+                            The winner is the one who has no more cards left.
+                        </div>
                     </Row>
                     <Row><Col><div className="center-div"><b>Warning</b></div></Col></Row>
                     <Row>
@@ -630,7 +634,7 @@ class Game extends Component {
                     <Container>
                         <Row><Col><div className="center-div">Leaving the room midgame will cause the game to halt for the other players during your turn.</div></Col></Row>
                         <Row><hr></hr></Row>
-                        <Row><Col><div className="center-div"><Button className="take-center-btn" onClick={this.returnHomeHandler} variant="secondary" size="sm">Leave?</Button></div></Col></Row>
+                        <Row><Col><div className="center-div"><Button className="take-center-btn" onClick={this.returnHomeHandler} variant="secondary">Leave?</Button></div></Col></Row>
                     </Container>
                 ),
                 popUp : true
@@ -707,6 +711,7 @@ class Game extends Component {
                         everyoneSwapped : true
                     });
                     this.props.updateMessages([...this.props.messages, {username : "", message : "Everyone is ready. Let the game start!"}]);
+                    this.props.updateMessages([...this.props.messages, {username : "", message : "Follow the ☞ emoji next to players' names to see who's turn it is!"}]);
                 }
             });
         });
@@ -791,6 +796,10 @@ class Game extends Component {
 
         socket.on('game-data-lost', () => {
             this.displayInactivityMessage();
+        });
+
+        socket.on('player-left-game', ({username}) => {
+            this.props.updateMessages([...this.props.messages, {username : "", message : `${username} has disconnected from the room. Please leave this room and start a new game.`}]);
         });
 
     }
