@@ -629,6 +629,7 @@ class Game extends Component {
                 popUpMsg : (
                     <Container>
                         <Row><Col><div className="center-div">Leaving the room midgame will cause the game to halt for the other players during your turn.</div></Col></Row>
+                        <Row><hr></hr></Row>
                         <Row><Col><div className="center-div"><Button className="take-center-btn" onClick={this.returnHomeHandler} variant="secondary" size="sm">Leave?</Button></div></Col></Row>
                     </Container>
                 ),
@@ -1086,6 +1087,7 @@ class Game extends Component {
                     <hr className="hidden-line"></hr>
                     <Container>
                         <Row><Col><div className="center-div">Game data lost due to inactivity or page refresh.</div></Col></Row>
+                        <Row><hr></hr></Row>
                         <Row><Col><div className="center-div"><Button className="take-center-btn" onClick={this.returnHomeHandler} variant="secondary" size="sm">Leave Game</Button></div></Col></Row>
                     </Container>
                 </>
