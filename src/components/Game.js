@@ -169,6 +169,7 @@ class Game extends Component {
                             //Check to see if the player has won
                             if (this.props.hidden_hand.indexOf(false) === -1) {
                                 this.displayWinMessage(this.props.username);
+                                this.setState({gameEnded : true});
                             }
 
                             if (!this.state.showHiddenCardMsg) {
@@ -374,6 +375,7 @@ class Game extends Component {
                         //Check to see if the player has won
                         if (this.props.hidden_hand.indexOf(false) === -1) {
                             this.displayWinMessage(this.props.username);
+                            this.setState({gameEnded : true});
                         }
                     }
 
@@ -716,6 +718,7 @@ class Game extends Component {
 
                 if (res.data.is_won) {
                     this.displayWinMessage(res.data.winner);
+                    this.setState({gameEnded : true});
                 }
             });
         });
