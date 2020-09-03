@@ -752,6 +752,7 @@ class Game extends Component {
             });
         });
 
+
         socket.on('player-took-center', ({username}) => {
             axios.get(SERVER('game/' + this.props.game_id + '/' + this.props.user_id + '/state')).then((res) => {
                 if (!res.data.found) {
@@ -800,6 +801,12 @@ class Game extends Component {
 
         socket.on('player-left-game', ({username}) => {
             this.props.updateMessages([...this.props.messages, {username : "", message : `${username} has disconnected from the room. Please leave this room and start a new game.`}]);
+        });
+
+        window.addEventListener("beforeunload", (ev) => 
+        {  
+            ev.preventDefault();
+            return this.returnHomeHandler();
         });
 
     }
