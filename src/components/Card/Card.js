@@ -14,6 +14,8 @@ export const Card = (props) => {
         }
         if (props.highlight) {
             toggleHighlight();
+        } else {
+            setHighlight(false);
         }
     }
 
@@ -41,7 +43,6 @@ export const Card = (props) => {
     } else if (cardNumber === '1') {
         cardNumber = 'A';
     }
-
 
     if (props.faceDown) {
         return (

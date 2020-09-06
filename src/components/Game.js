@@ -195,6 +195,164 @@ class Game extends Component {
         }
     }
 
+    multipleCardPlayHandler = () => {
+        if (this.state.gameEnded) {
+            this.displayGameEndedMessage();
+        } else if (!this.state.everyoneSwapped) {
+            this.setState({
+                popUpMsg : "The swapping phase hasn't ended yet!",
+                popUp : true
+            });
+        } else if (this.props.turn_at !== this.props.username) {
+            this.setState({
+                popUpMsg : `It is not your turn! (It's ${this.props.turn_at}'s turn)`,
+                popUp : true
+            });
+        } else if (this.props.hand.length == 0) {
+            this.setState({
+                popUpMsg : `You have no cards in your hand.`,
+                popUp : true
+            });
+        } else {
+            this.setState({selectedHandCards : []});
+            let handDisplay = this.props.hand.map((card) => {
+                return (<Card highlight={true} clickable={true} float={true} playCard={() => {this.selectCardHandler(card)}} fromUntouched={false} key={card} number={card}/>)
+            });
+    
+            this.setState({
+                popUpMsg : (
+                    <Container>
+                        <Row><Col><div className="center-div">Select the cards that you want to play together as a combo (must be of same number).</div></Col></Row>
+                        <Row><hr></hr></Row>
+                        <Row>{handDisplay}</Row>
+                        <Row><hr></hr></Row>
+                        <Row><Col><div className="center-div"><Button onClick={this.multipleCardPlayHandlerHelper} variant="outline-secondary" size="sm">Play These Cards</Button></div></Col></Row>
+                    </Container>
+                ),
+                popUp : true
+            });
+        }
+    }
+
+    multipleCardPlayHandlerHelper = () => {
+        this.setState({popUpMsg : "", popUp : false});
+        if (this.state.selectedHandCards.length == 0) {
+            return;
+        }
+
+        //Check if the selected cards all have the same number
+        let firstCard = this.state.selectedHandCards[0] % 13;
+        for (let card of this.state.selectedHandCards) {
+            if (card % 13 !== firstCard) {
+                this.setState({
+                    popUpMsg : "The cards selected are not the same number. Only duplicates can be played if you want to play multiple cards in a turn.",
+                    popUp : true
+                });
+            }
+        }
+
+        axios.put(SERVER('game/' + this.props.game_id + '/playMultipleCards'), {
+            user_id : this.props.user_id,
+            selected_cards : this.state.selectedHandCards
+        }).then((res) => {
+            if (!res.data.success) {
+                this.setState({
+                    popUpMsg : res.data.err_msg,
+                    popUp : true
+                });
+                //if the room data has been deleted, prompt inactivty message
+                if (res.data.err_msg === "Room does not exist!") {
+                    this.displayInactivityMessage();
+                    socket.emit('data-lost', {"game_id" : this.props.game_id});
+                }
+            } else {
+                this.props.updateHand(this.props.hand.filter(item => this.state.selectedHandCards.indexOf(item) === -1));
+                this.props.updateCenter({
+                    deck : this.props.deck,
+                    played_pile : [...this.props.played_pile, ...this.state.selectedHandCards],
+                    discard_pile : this.props.discard_pile
+                });
+
+                //Update the chat
+                for (let card of this.state.selectedHandCards) {
+                    this.props.updateMessages([...this.props.messages, {username : "", message : this.props.username + " played a " + calcCard(card) + "!"}]);
+                }
+
+                if (res.data.go_again) {
+                    if (res.data.is_burn) { 
+                        this.setState({
+                            popUpMsg : "You burned the play pile! You can play another card! Remember to draw a card for every card you play!",
+                            popUp : true
+                        });
+                        this.props.updateMessages([...this.props.messages, {username : "", message : "The play pile was burned!"}]);
+                        this.props.updateCenter({
+                            deck : this.props.deck,
+                            played_pile : [],
+                            discard_pile : [...this.props.discard_pile, ...this.props.played_pile]
+                        });
+                    } else {
+                        this.setState({
+                            popUpMsg : "You can play another card! Remember to draw a card for every card you play!",
+                            popUp : true
+                        });
+                    }
+                    //Update the playable cards because the next card can be anything
+                    this.props.updatePlayableCards(DECK_NUM);
+                } else {
+                    //If the player doesn't go again, move turn pointer to next player
+                    let index = this.props.player_names.indexOf(this.props.username);
+                    this.props.updateTurnAt(index === this.props.player_names.length - 1 ? this.props.player_names[0] : this.props.player_names[index + 1]);
+                }
+
+                if (!this.state.popUp && this.props.hand.length <= 1 && this.props.deck > 0) {
+                    this.setState({
+                        popUpMsg : "Remember to draw a card for every card you play!",
+                        popUp : true
+                    });
+                }
+                
+
+                //Update the card draw opps so the player can draw a card
+                if (this.props.hand.length < 4) {
+                    this.setState({drawCardOpps : 4 - this.props.hand.length});
+                }
+                
+                //Check to see if the player has reach their hidden cards
+                if (this.props.hand.length === 0 && this.props.deck === 0 && 
+                    this.props.untouched_hand[0] === -1 && this.props.untouched_hand[1] === -1 &&
+                    this.props.untouched_hand[2] === -1) {
+
+
+                    //Check to see if the player has won
+                    if (this.props.hidden_hand.indexOf(false) === -1) {
+                        this.displayWinMessage(this.props.username);
+                        this.setState({gameEnded : true});
+                    }
+
+                    if (!this.state.showHiddenCardMsg) {
+                        this.setState({
+                            showHiddenCardMsg : true,
+                            popUpMsg : "You have reached your last 3 cards! These are face-down, hidden cards. On your turn, you need to select one to play at random. If the card doesn't beat the center, you must take the center cards.",
+                            popUp : true
+                        });
+                    }
+                    
+                }
+                //Notify other players of your turn
+                socket.emit('play-multiple', {"game_id" : this.props.game_id, "cards" : this.state.selectedHandCards, "username" : this.props.username, "is_burn" : res.data.is_burn});
+            }
+        });
+
+    }
+
+    selectCardHandler = (card) => {
+        if (this.state.selectedHandCards.indexOf(card) !== -1) {
+            this.setState({selectedHandCards : this.state.selectedHandCards.filter(item => item !== card)});
+        } else {
+            this.setState({selectedHandCards : [...this.state.selectedHandCards, card]});
+        }
+    }
+
     swapCardHandler = () => {
         console.log(this.state);
         if (this.state.selectedHandCards.length !== this.state.selectedUntouchedCards.length) {
@@ -596,13 +754,18 @@ class Game extends Component {
                             This game in a way is similar to Deuce (Big 2) where the goal is to try to get rid of 
                             all of your cards. However, in this game there are power cards (2, 3, 7, 10) which can beat 
                             any card and have special effects. This would mean that the lowest card is actually a 4,
-                            and the highest card is an Ace (suits do not matter). <br></br>
+                            and the highest card is an Ace (suits do not matter). <br></br><br></br>
                             For the effects of the power cards: <br></br>
-                            <u>2 allows you to go again</u><br></br> 
-                            <u>3 mirrors the card that's below it (but doesn't mirror a 2)</u><br></br>
-                            <u>7 forces the next player to play a card that is below 7 (power cards, or 4, 5, 6)</u><br></br>
-                            <u>10 burns the play pile (moves everything to the discard)</u><br></br>
-                            <u>A four-of-kind on the play pile will also be a burn (this includes using 3 as mirrors);</u><br></br>
+                            <ul>
+                                <li><b>2</b> - allows you to go again</li>
+                                <li><b>3</b> - mirrors the card that's below it (but doesn't mirror a 2)</li>
+                                <li><b>7</b> - forces the next player to play a card that is below 7 (power cards, or 4, 5, 6)</li>
+                                <li><b>10</b> - burns the play pile (moves everything to the discard)</li>
+                                <li>A <b>four-of-kind</b> on the play pile will also be a burn (this includes using 3 as mirrors)</li>
+                                <li>Note that playing a card that burns will allow you to go again.</li>
+                            </ul>
+                            
+                            
                             If there is a card you cannot beat in
                             the center, you must take the center cards to end your turn (click the play pile). 
                             Draw a card after every play, and once the deck runs out (including your hand), start 
@@ -795,6 +958,44 @@ class Game extends Component {
             });
         });
 
+        socket.on('player-played-mult', ({cards, username, is_burn}) => {
+            axios.get(SERVER('game/' + this.props.game_id + '/' + this.props.user_id + '/state')).then((res) => {
+                if (!res.data.found) {
+                    this.displayInactivityMessage();
+                }
+                this.props.updateState({
+                    players : res.data.other_players,
+                    deck : res.data.draw_deck_size,
+                    played_pile : res.data.played_pile,
+                    discard_pile : res.data.discard_pile,
+                    hand : res.data.hand,
+                    untouched_hand : res.data.untouched_hand,
+                    hidden_hand : res.data.hidden_hand,
+                    playable_cards : res.data.playable_cards,
+                    turn_at : res.data.turn_at
+                });
+
+                for (let card of cards) {
+                    this.props.updateMessages([...this.props.messages, {username : "", message : username + " played a " + calcCard(card) + "!"}]);
+                }
+
+                if (is_burn) {
+                    //Display the burn message to the chat
+                    this.props.updateMessages([...this.props.messages, {username : "", message : "The play pile was burned!"}]);
+                }
+
+                if (res.data.is_won) {
+                    this.displayWinMessage(res.data.winner);
+                    this.setState({gameEnded : true});
+                }
+
+
+
+            });
+
+
+        });
+
         socket.on('game-data-lost', () => {
             this.displayInactivityMessage();
         });
@@ -834,7 +1035,7 @@ class Game extends Component {
         let topDiscard = this.props.discard_pile.length === 0 ? 0 : this.props.discard_pile[this.props.discard_pile.length - 1];
         return (
             <>
-                <Card clickable={true} clickFunct={this.deckClickHandler} float={true} blank={this.props.deck.length === 0} faceDown={true}/>
+                <Card clickable={true} clickFunct={this.deckClickHandler} float={true} blank={this.props.deck === 0} faceDown={true}/>
                 <p>Deck (Cards Left: {this.props.deck}) (Click to draw)</p>
                 <br></br>
                 <Card clickable={true} clickFunct={this.playPileClickHandler} float={true} blank={topPlayed === 0} number={topPlayed}/>
@@ -861,6 +1062,28 @@ class Game extends Component {
             </>
         );
 
+    }
+
+    formatCardSideButtonDisplays = () => {
+        return (
+            <>
+                {
+                    this.state.swapPhase ? 
+                    (<Button className="swap-btn" onClick={this.lockInHandler} variant="secondary">Lock In</Button>):
+                    null
+                }
+                {
+                    this.state.swapPhase ? 
+                    (<Button className="swap-btn" onClick={this.swapCardHandler} variant="secondary">Swap</Button>):
+                    null
+                }
+                {
+                    !this.state.swapPhase ?
+                    (<Button className="swap-btn" onClick={this.multipleCardPlayHandler} variant="secondary">Play Multiple</Button>):
+                    null
+                }
+            </>
+        )
     }
 
     render() {
@@ -959,16 +1182,7 @@ class Game extends Component {
                                 <hr className="hidden-line"></hr>
                                 <hr className="hidden-line"></hr>
                                 <hr className="hidden-line"></hr>
-                                {
-                                    this.state.swapPhase ? 
-                                    (<Button className="swap-btn" onClick={this.lockInHandler} variant="secondary">Lock In</Button>):
-                                    null
-                                }
-                                {
-                                    this.state.swapPhase ? 
-                                    (<Button className="swap-btn" onClick={this.swapCardHandler} variant="secondary">Swap</Button>):
-                                    null
-                                }
+                                {this.formatCardSideButtonDisplays()}
                             </Col>
                             <Col>
                                 {this.formatCenterDisplay()}
@@ -1012,16 +1226,7 @@ class Game extends Component {
                             <Col>
                                 {this.formatPlayerDisplay(playerNames[1], playerCards[1], playerNumCards[1], playerSwapped[1])}
                                 <hr className="hidden-line"></hr>
-                                {
-                                    this.state.swapPhase ? 
-                                    (<Button className="swap-btn" onClick={this.lockInHandler} variant="secondary">Lock In</Button>):
-                                    null
-                                }
-                                {
-                                    this.state.swapPhase ? 
-                                    (<Button className="swap-btn" onClick={this.swapCardHandler} variant="secondary">Swap</Button>):
-                                    null
-                                }
+                                {this.formatCardSideButtonDisplays()}
                             </Col>
                             <Col>
                                 {this.formatCenterDisplay()}
@@ -1065,16 +1270,7 @@ class Game extends Component {
                             <Col>
                                 {this.formatPlayerDisplay(playerNames[1], playerCards[1], playerNumCards[1], playerSwapped[1])}
                                 <hr className="hidden-line"></hr>
-                                {
-                                    this.state.swapPhase ? 
-                                    (<Button className="swap-btn" onClick={this.lockInHandler} variant="secondary">Lock In</Button>):
-                                    null
-                                }
-                                {
-                                    this.state.swapPhase ? 
-                                    (<Button className="swap-btn" onClick={this.swapCardHandler} variant="secondary">Swap</Button>):
-                                    null
-                                }
+                                {this.formatCardSideButtonDisplays()}
                             </Col>
                             <Col>
                                 {this.formatCenterDisplay()}
@@ -1104,7 +1300,7 @@ class Game extends Component {
                     <Container>
                         <Row><Col><div className="center-div">Game data lost due to inactivity or page refresh.</div></Col></Row>
                         <Row><hr></hr></Row>
-                        <Row><Col><div className="center-div"><Button className="take-center-btn" onClick={this.returnHomeHandler} variant="secondary" size="sm">Leave Game</Button></div></Col></Row>
+                        <Row><Col><div className="center-div"><Button className="take-center-btn" onClick={this.returnHomeHandler} variant="secondary">Return Home</Button></div></Col></Row>
                     </Container>
                 </>
             )
