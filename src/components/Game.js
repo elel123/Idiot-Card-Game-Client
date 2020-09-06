@@ -224,9 +224,13 @@ class Game extends Component {
                     <Container>
                         <Row><Col><div className="center-div">Select the cards that you want to play together as a combo (must be of same number).</div></Col></Row>
                         <Row><hr></hr></Row>
-                        <Row>{handDisplay}</Row>
+                        <Row className="justify-content-md-center">
+                            <Col xs></Col>
+                            <Col>{handDisplay}</Col>
+                            <Col xs></Col>
+                        </Row>
                         <Row><hr></hr></Row>
-                        <Row><Col><div className="center-div"><Button onClick={this.multipleCardPlayHandlerHelper} variant="outline-secondary" size="sm">Play These Cards</Button></div></Col></Row>
+                        <Row><Col><div className="center-div"><Button className="play-mult-btn" onClick={this.multipleCardPlayHandlerHelper} variant="outline-secondary" size="sm">Play These Cards</Button></div></Col></Row>
                     </Container>
                 ),
                 popUp : true
@@ -248,7 +252,17 @@ class Game extends Component {
                     popUpMsg : "The cards selected are not the same number. Only duplicates can be played if you want to play multiple cards in a turn.",
                     popUp : true
                 });
+                return;
             }
+        }
+
+        //Check if the cards can beat the center
+        if (this.props.playable_cards.indexOf(this.state.selectedHandCards[0]) === -1) {
+            this.setState({
+                popUpMsg : "The selected cards cannot beat the card in the center.",
+                popUp : true
+            });
+            return;
         }
 
         axios.put(SERVER('game/' + this.props.game_id + '/playMultipleCards'), {

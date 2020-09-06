@@ -89,6 +89,10 @@
     float: left;
 }
 
+.play-mult-btn {
+    float: left;
+}
+
 .center-div {
     display: flex;
     justify-content: center;

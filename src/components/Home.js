@@ -30,7 +30,7 @@ class Home extends Component {
     }
 
     handleRoomID = (event) => {
-        this.setState({
+        this.setState({ 
             room : event.target.value
         });
     }
