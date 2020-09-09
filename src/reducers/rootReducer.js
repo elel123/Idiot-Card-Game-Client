@@ -14,7 +14,8 @@ const initState = {
     hidden_hand : [],
     playable_cards : [],
     turn_at : "",
-    messages : []
+    messages : [],
+    settings: {}
 }
 
 const rootReducer = (state = initState, action) => {
@@ -107,7 +108,13 @@ const rootReducer = (state = initState, action) => {
             hidden_hand : [],
             playable_cards : [],
             turn_at : "",
-            messages : []
+            messages : [],
+            settings : {}
+        }
+    } else if (action.type === 'UPDATE_SETTINGS') {
+        return {
+            ...state,
+            settings : action.settings
         }
     }
     return state;

@@ -19,6 +19,12 @@ export const Card = (props) => {
         }
     }
 
+    const mouseOverHandler = () => {
+        if (!props.highlight) {
+            setHighlight(false);
+        }
+    }
+
     let cardNumber = (props.number % 13).toString();
     let float = props.float ? "float" : null;
     let click = props.clickable ? "pointer" : null;
@@ -44,17 +50,17 @@ export const Card = (props) => {
         cardNumber = 'A';
     }
 
-    if (props.faceDown) {
-        return (
-            <div onClick={clickHandler} className={"card " + float + " " + click + " " + (highlight && props.clickable ? "highlight" : null)}>X</div>
-        )
-    } else if (props.blank) {
+    if (props.blank) {
         return (
             <div onClick={clickHandler} className={"card " + float + " " + click + " " + (highlight && props.clickable ? "highlight" : null)}></div>
         )
+    } else if (props.faceDown) {
+        return (
+            <div onClick={clickHandler} className={"card " + float + " " + click + " " + (highlight && props.clickable ? "highlight" : null)}>X</div>
+        )
     } else {
         return (
-            <div onClick={clickHandler} className={"card " + float + " " + click + " " + (highlight && props.clickable ? "highlight" : null)}>{cardNumber} {icon}</div>
+            <div onClick={clickHandler} onMouseOver={mouseOverHandler} className={"card " + float + " " + click + " " + (highlight && props.clickable ? "highlight" : null)}>{cardNumber} {icon}</div>
         )
     }
 

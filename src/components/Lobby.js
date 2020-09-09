@@ -7,7 +7,9 @@ import { socket } from '../socket/socket';
 
 import {
     Container, 
-    Button
+    Button,
+    Col,
+    Row
 } from 'react-bootstrap';
 
 
@@ -18,7 +20,7 @@ import '../App.css';
 class Lobby extends Component {
     state = {
         popUp : false,
-        popUpMsg : ""
+        popUpMsg : "",
     }
 
     closePopUp = (event) => {
@@ -103,8 +105,92 @@ class Lobby extends Component {
         }
     }
 
+    displaySettings = () => {
+        this.setState({
+            popUp: true,
+            popUpMsg: (
+                <Container>
+                    <Row><Col><div className="center-div"><b>Settings</b></div></Col></Row>
+                    <Row><Col><div className="center-div">Only the VIP can modify the game settings</div></Col></Row>
+                    <Row><hr></hr></Row>
+                    <Row>
+                        <Col>
+                            Play Duplicate Cards: 
+                        </Col>
+                        <Col>
+                            <div>
+                                <Button onClick={() => {this.updatePlayMult(true);}} className="home-btn" variant={this.props.settings.playMult ? "secondary" : "outline-secondary"}>On</Button>
+                                <Button onClick={() => {this.updatePlayMult(false);}} className="home-btn" variant={!this.props.settings.playMult ? "secondary" : "outline-secondary"}>Off</Button>
+                            </div>
+                        </Col>
+                    </Row>
+                    <Row><hr></hr></Row>
+                    <Row>
+                        <Col>
+                            Auto Draw Cards: 
+                        </Col>
+                        <Col>
+                            <div>
+                                <Button onClick={() => {this.updateAutoDraw(true);}} className="home-btn" variant={this.props.settings.autoDraw ? "secondary" : "outline-secondary"}>On</Button>
+                                <Button onClick={() => {this.updateAutoDraw(false);}} className="home-btn" variant={!this.props.settings.autoDraw ? "secondary" : "outline-secondary"}>Off</Button>
+                            </div>
+                        </Col>
+                    </Row>
+                </Container>
+            )
+        });
+    }
+
+    updatePlayMult = (setting) => {
+        if (this.props.player_names[0] !== this.props.username) {
+            this.setState({popUpMsg : "Only the VIP can modify the game settings."});
+            return;
+        }
+
+        if (setting === this.props.settings.playMult) {
+            return;
+        }
+
+        this.props.updateSettings({
+            playMult : setting,
+            autoDraw : this.props.settings.autoDraw
+        });
+
+        setTimeout(() => {
+            this.displaySettings();
+            socket.emit('edit-settings', {"game_id" : this.props.game_id, "settings" : this.props.settings});
+        }, 200);
+    }
+
+    updateAutoDraw = (setting) => {
+        if (this.props.player_names[0] !== this.props.username) {
+            this.setState({popUpMsg : "Only the VIP can modify the game settings."});
+            return;
+        }
+
+        if (setting === this.props.settings.autoDraw) {
+            return;
+        }
+
+        this.props.updateSettings({
+            playMult : this.props.settings.playMult,
+            autoDraw : setting
+        });
+        
+
+        setTimeout(() => {
+            this.displaySettings();
+            socket.emit('edit-settings', {"game_id" : this.props.game_id, "settings" : this.props.settings});
+        }, 200);
+    }
+
     //Lifecycle Methods
     componentDidMount() {
+
+        this.props.updateSettings({
+            playMult : true,
+            autoDraw : false
+        });
         
         socket.emit('join', {"username" : this.props.username, "game_id" : this.props.game_id});
 
@@ -112,6 +198,11 @@ class Lobby extends Component {
         socket.on('player-join', ({username}) => {
             console.log(`${username} joined the room.`);
             this.props.updatePlayerNames([...this.props.player_names, username]);
+            
+            //Update the new player on setting changes
+            if (this.props.player_names[0] === this.props.username) {
+                socket.emit('edit-settings', {"game_id" : this.props.game_id, "settings" : this.props.settings});
+            }
         });
         socket.on('player-leave', ({username}) => {
             console.log(`${username} joined the room.`);
@@ -130,6 +221,12 @@ class Lobby extends Component {
             }
             
         });
+        socket.on('settings-changed', ({settings}) => {
+            this.props.updateSettings({
+                playMult : settings.playMult,
+                autoDraw : settings.autoDraw
+            });
+        });
         socket.on('game-start', () => {
             alert("game started");
             axios.get(SERVER('game/' + this.props.game_id + '/' + this.props.user_id + '/state')).then((res) => {
@@ -147,6 +244,23 @@ class Lobby extends Component {
 
                 this.props.history.push('/Game');
             });
+        });
+
+        window.addEventListener("beforeunload", (ev) => 
+        {  
+            ev.preventDefault();
+            socket.emit('leave', {"username" : this.props.username, "game_id" : this.props.game_id});
+            socket.off();
+            this.props.resetState();
+        });
+
+        window.addEventListener('popstate', (ev) => {
+            ev.preventDefault();
+            alert('Please use the "Leave Room" button next time when leaving this page.');
+            socket.emit('leave', {"username" : this.props.username, "game_id" : this.props.game_id});
+            socket.off();
+            this.props.resetState();
+            this.props.history.push('/');
         });
     }
 
@@ -182,6 +296,7 @@ class Lobby extends Component {
                 <div>
                     <Button onClick={this.startGameHandler} className="home-btn" variant="secondary">Start Game</Button>
                     <Button onClick={this.leaveRoomHandler} className="home-btn" variant="secondary">Leave Room</Button>
+                    <Button onClick={() => {this.displaySettings()}} className="home-btn" variant="secondary"><span role="img">⚙️</span></Button>
                 </div>
                 <hr></hr>
                 <div>
@@ -211,7 +326,8 @@ const mapStateToProps = (state, ownProps) => {
         untouched_hand : state.untouched_hand,
         hidden_hand : state.hidden_hand,
         playable_cards : state.playable_cards,
-        turn_at : state.turn_at
+        turn_at : state.turn_at,
+        settings : state.settings
     }
 }
 
@@ -224,7 +340,8 @@ const mapDispatchToProps = (dispatch) => {
         updateUsername: (username) => {dispatch({type: 'UPDATE_USERNAME', username: username})},
         updatePlayerNames: (player_names) => {dispatch({type: 'UPDATE_PLAYER_NAMES', player_names: player_names})},
         updateUserID: (user_id) => {dispatch({type: 'UPDATE_USER_ID', user_id : user_id})},
-        resetState: () => {dispatch({type: 'RESET_STATE'})}
+        updateSettings: (settings) => {dispatch({type: 'UPDATE_SETTINGS', settings: settings})},
+        resetState: () => {dispatch({type: 'RESET_STATE'})},
 
     }
 }

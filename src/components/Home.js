@@ -36,6 +36,7 @@ class Home extends Component {
     }
 
     handleFindRoom = (event) => {
+        console.log(this.props);
         if (this.state.username.length > 30) {
             this.setState({
                 popUpMsg: "Please enter a shorter username",
@@ -176,7 +177,12 @@ class Home extends Component {
                     <Button className="home-btn" onClick={this.handleCreateRoom} variant="secondary">Create Room</Button>
                 </div>
                 </Jumbotron>
-
+                <hr className="hidden-line"></hr>
+                <hr className="hidden-line"></hr>
+                <hr className="hidden-line"></hr>
+                <hr className="hidden-line"></hr>
+                <hr className="hidden-line"></hr>
+                <p>(Version 2020.9.8)</p>
 
                 <Popup open={this.state.popUp} onClose={this.closePopUp} modal closeOnDocumentClick>
                     <div>{this.state.popUpMsg}</div>

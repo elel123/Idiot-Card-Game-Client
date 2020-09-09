@@ -48,7 +48,7 @@ class ChatBox extends Component {
                     )
                 }
                 return (
-                    <div key={index}>{msg.username}: {msg.message}</div>
+                    <div key={index}><u><b>{msg.username}</b></u>: {msg.message}</div>
                 )
             });
         }

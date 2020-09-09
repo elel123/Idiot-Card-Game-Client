@@ -147,7 +147,7 @@ class Game extends Component {
                             this.props.updateTurnAt(index === this.props.player_names.length - 1 ? this.props.player_names[0] : this.props.player_names[index + 1]);
                         }
 
-                        if (!this.state.popUp && this.props.hand.length <= 1 && this.props.deck > 0) {
+                        if (!this.props.settings.autoDraw && !this.state.popUp && this.props.hand.length <= 1 && this.props.deck > 0) {
                             this.setState({
                                 popUpMsg : "Remember to draw a card for every card you play!",
                                 popUp : true
@@ -159,6 +159,7 @@ class Game extends Component {
                         if (this.props.hand.length < 4) {
                             this.setState({drawCardOpps : 4 - this.props.hand.length});
                         }
+
                         
                         //Check to see if the player has reach their hidden cards
                         if (this.props.hand.length === 0 && this.props.deck === 0 && 
@@ -183,6 +184,15 @@ class Game extends Component {
                         }
                         //Notify other players of your turn
                         socket.emit('play-card', {"game_id" : this.props.game_id, "card" : card, "username" : this.props.username, "playable" : true, "is_burn" : res.data.is_burn});
+
+                        //Autodraw cards for the player if auto draw is turned on
+                        if (this.props.settings.autoDraw) {
+                            let numDraw = Math.min(4 - this.props.hand.length, this.props.deck);
+                            while (numDraw > 0) {
+                                this.deckClickHandler();
+                                numDraw--;
+                            }
+                        }
                         
                     }
                 });
@@ -354,6 +364,16 @@ class Game extends Component {
                 }
                 //Notify other players of your turn
                 socket.emit('play-multiple', {"game_id" : this.props.game_id, "cards" : this.state.selectedHandCards, "username" : this.props.username, "is_burn" : res.data.is_burn});
+
+                //Autodraw cards for the player if auto draw is turned on
+                if (this.props.settings.autoDraw) {
+                    let numDraw = Math.min(4 - this.props.hand.length, this.props.deck);
+                    for (let i = 0; i < numDraw; i++) {
+                        setTimeout(() => {
+                            this.deckClickHandler();
+                        }, 1500 * i);
+                    }
+                }
             }
         });
 
@@ -743,7 +763,7 @@ class Game extends Component {
             ),
             popUp : true
         });
-        this.props.updateMessages([...this.props.messages, {username : "", message : `${winner} has won! Please click the 'Leave Room' button to return to the home screen.`}]);
+        this.props.updateMessages([...this.props.messages, {username : "", message : `${winner} has won! Please click the 'Leave Game' button to return to the home screen.`}]);
     }
 
     displayGameEndedMessage = (winner) => {
@@ -841,7 +861,9 @@ class Game extends Component {
 
         this.setState({
             popUpMsg : "Swapping Phase! Select cards to swap between your hand and the 3 table cards. Click 'Lock In' when finished.",
-            popUp : true
+            popUp : true,
+            selectedHandCards : [],
+            selectedUntouchedCards : []
         });
 
         socket.on('player-swap', () => {
@@ -1024,6 +1046,10 @@ class Game extends Component {
             return this.returnHomeHandler();
         });
 
+        window.addEventListener('popstate', (ev) => {
+            ev.preventDefault();
+            return this.returnHomeHandler();
+        });
     }
 
     formatPlayerDisplay = (name, cardDisplay, numCards=null, swapped=null) => {
@@ -1092,7 +1118,7 @@ class Game extends Component {
                     null
                 }
                 {
-                    !this.state.swapPhase ?
+                    !this.state.swapPhase && this.props.settings.playMult?
                     (<Button className="swap-btn" onClick={this.multipleCardPlayHandler} variant="secondary">Play Multiple</Button>):
                     null
                 }
@@ -1342,7 +1368,8 @@ const mapStateToProps = (state, ownProps) => {
         hidden_hand : state.hidden_hand,
         playable_cards : state.playable_cards,
         turn_at : state.turn_at,
-        messages : state.messages
+        messages : state.messages,
+        settings : state.settings
     }
 }
 
