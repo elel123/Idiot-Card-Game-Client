@@ -72,26 +72,27 @@ class Lobby extends Component {
                             popUp: true,
                             popUpMsg: res.data.err_msg
                         });
-                    }
-                    socket.emit('start', {"game_id" : this.props.game_id});
+                    } else {
+                        socket.emit('start', {"game_id" : this.props.game_id});
 
-                    //Redirect to the game room
-                    axios.get(SERVER('game/' + this.props.game_id + '/' + this.props.user_id + '/state')).then((res) => {
-                        this.props.updateState({
-                            players : res.data.other_players,
-                            deck : res.data.draw_deck_size,
-                            played_pile : res.data.played_pile,
-                            discard_pile : res.data.discard_pile,
-                            hand : res.data.hand,
-                            untouched_hand : res.data.untouched_hand,
-                            hidden_hand : res.data.hidden_hand,
-                            playable_cards : res.data.playable_cards,
-                            turn_at : res.data.turn_at
+                        //Redirect to the game room
+                        axios.get(SERVER('game/' + this.props.game_id + '/' + this.props.user_id + '/state')).then((res) => {
+                            this.props.updateState({
+                                players : res.data.other_players,
+                                deck : res.data.draw_deck_size,
+                                played_pile : res.data.played_pile,
+                                discard_pile : res.data.discard_pile,
+                                hand : res.data.hand,
+                                untouched_hand : res.data.untouched_hand,
+                                hidden_hand : res.data.hidden_hand,
+                                playable_cards : res.data.playable_cards,
+                                turn_at : res.data.turn_at
+                            });
+
+                            console.log(this.props);
+                            this.props.history.push('/Game');
                         });
-
-                        console.log(this.props);
-                        this.props.history.push('/Game');
-                    });
+                    }
 
                 })
             } else {
