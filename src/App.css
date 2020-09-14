@@ -93,6 +93,14 @@
     float: left;
 }
 
+.float-left {
+    float: left;
+}
+
+.float-right {
+    float: right;
+}
+
 .center-div {
     display: flex;
     justify-content: center;

@@ -30,11 +30,16 @@ class Game extends Component {
         showSwapButtons : true,
         selectedHandCards : [],
         selectedUntouchedCards : [],
+        numReset : 0,
         gameEnded : false,
 
         //States that control the center
         haveToTakeCenter : false,
         drawCardOpps : 0,
+
+        //State for play again
+        newGameID : "",
+        waitingForNewGame : false,
 
         showHiddenCardMsg : false,
         popUp : false,
@@ -218,15 +223,54 @@ class Game extends Component {
                 popUpMsg : `It is not your turn! (It's ${this.props.turn_at}'s turn)`,
                 popUp : true
             });
-        } else if (this.props.hand.length == 0) {
+        } else if (this.props.hand.length < 4 && this.props.deck === 0 && 
+                   (this.props.untouched_hand[0] !== -1 || this.props.untouched_hand[1] !== -1 || this.props.untouched_hand[2] !== -1)) {
+            
+            if (this.props.hand.length === 0) {
+                this.setState({
+                    popUpMsg : "You have no more cards in your hand.",
+                    popUp : true
+                });
+            }
+            
+            this.setState({selectedHandCards : []});
+            this.setState({selectedUntouchedCards : []});
+            let handDisplay = this.props.hand.map((card) => {
+                return (<Card highlight={true} clickable={true} float={true} playCard={() => {this.selectCardHandler(card, false)}} fromUntouched={false} key={card} number={card}/>);
+            });
+            let untouchedHandDisplay = this.props.untouched_hand.map((card, index) => {
+                if (card === -1) {
+                    return (<Card clickable={false} highlight={false} float={true} blank={true} key={index}/>);
+                }
+                return (<Card highlight={true} clickable={true} float={true} playCard={() => {this.selectCardHandler(card, true)}} fromUntouched={true} key={card} number={card}/>);
+            });
             this.setState({
-                popUpMsg : `You have no cards in your hand.`,
+                popUpMsg : (
+                    <Container>
+                        <Row><Col><div className="center-div">Select the cards that you want to play together as a combo (must be of same number).</div></Col></Row>
+                        <Row><hr></hr></Row>
+                        <Row className="justify-content-md-center">
+                            <Col xs><div className="float-right">Center Face-Up Cards: </div></Col>
+                            <Col>{untouchedHandDisplay}</Col>
+                            <Col xs></Col>
+                        </Row>
+                        <Row><hr></hr></Row>
+                        <Row className="justify-content-md-center">
+                            <Col xs><div className="float-right">Hand Cards: </div></Col>
+                            <Col>{this.props.hand.length === 0 ? (<div className="float-left">None</div>) : handDisplay}</Col>
+                            <Col xs></Col>
+                        </Row>
+                        <Row><hr></hr></Row>
+                        <Row><Col><div className="center-div"><Button className="play-mult-btn" onClick={this.multipleCardPlayHandlerHelper} variant="outline-secondary" size="sm">Play These Cards</Button></div></Col></Row>
+                    </Container>
+                ),
                 popUp : true
             });
         } else {
             this.setState({selectedHandCards : []});
+            this.setState({selectedUntouchedCards : []});
             let handDisplay = this.props.hand.map((card) => {
-                return (<Card highlight={true} clickable={true} float={true} playCard={() => {this.selectCardHandler(card)}} fromUntouched={false} key={card} number={card}/>)
+                return (<Card highlight={true} clickable={true} float={true} playCard={() => {this.selectCardHandler(card, false)}} fromUntouched={false} key={card} number={card}/>)
             });
     
             this.setState({
@@ -250,13 +294,15 @@ class Game extends Component {
 
     multipleCardPlayHandlerHelper = () => {
         this.setState({popUpMsg : "", popUp : false});
-        if (this.state.selectedHandCards.length == 0) {
+        if (this.state.selectedHandCards.length === 0 && this.state.selectedUntouchedCards.length === 0) {
             return;
         }
 
+        let totalSelected = [...this.state.selectedHandCards, ...this.state.selectedUntouchedCards];
+
         //Check if the selected cards all have the same number
-        let firstCard = this.state.selectedHandCards[0] % 13;
-        for (let card of this.state.selectedHandCards) {
+        let firstCard = totalSelected[0] % 13;
+        for (let card of totalSelected) {
             if (card % 13 !== firstCard) {
                 this.setState({
                     popUpMsg : "The cards selected are not the same number. Only duplicates can be played if you want to play multiple cards in a turn.",
@@ -267,7 +313,7 @@ class Game extends Component {
         }
 
         //Check if the cards can beat the center
-        if (this.props.playable_cards.indexOf(this.state.selectedHandCards[0]) === -1) {
+        if (this.props.playable_cards.indexOf(totalSelected[0]) === -1) {
             this.setState({
                 popUpMsg : "The selected cards cannot beat the card in the center.",
                 popUp : true
@@ -275,9 +321,18 @@ class Game extends Component {
             return;
         }
 
+        //If untouched cards were selected, check if all of the hand cards are selected
+        if (this.state.selectedUntouchedCards.length > 0 && this.state.selectedHandCards.length !== this.props.hand.length) {
+            this.setState({
+                popUpMsg : "You can only select the center face-up cards in your combo if all cards in your hand are also selected.",
+                popUp : true
+            });
+            return;
+        }
+
         axios.put(SERVER('game/' + this.props.game_id + '/playMultipleCards'), {
             user_id : this.props.user_id,
-            selected_cards : this.state.selectedHandCards
+            selected_cards : totalSelected
         }).then((res) => {
             if (!res.data.success) {
                 this.setState({
@@ -291,14 +346,21 @@ class Game extends Component {
                 }
             } else {
                 this.props.updateHand(this.props.hand.filter(item => this.state.selectedHandCards.indexOf(item) === -1));
+                this.props.updateUntouchedHand(this.props.untouched_hand.map((card) => {
+                    if (this.state.selectedUntouchedCards.indexOf(card) !== -1) {
+                        return -1;
+                    } else {
+                        return card;
+                    }
+                }));
                 this.props.updateCenter({
                     deck : this.props.deck,
-                    played_pile : [...this.props.played_pile, ...this.state.selectedHandCards],
+                    played_pile : [...this.props.played_pile, ...totalSelected],
                     discard_pile : this.props.discard_pile
                 });
 
                 //Update the chat
-                for (let card of this.state.selectedHandCards) {
+                for (let card of totalSelected) {
                     this.props.updateMessages([...this.props.messages, {username : "", message : this.props.username + " played a " + calcCard(card) + "!"}]);
                 }
 
@@ -363,7 +425,7 @@ class Game extends Component {
                     
                 }
                 //Notify other players of your turn
-                socket.emit('play-multiple', {"game_id" : this.props.game_id, "cards" : this.state.selectedHandCards, "username" : this.props.username, "is_burn" : res.data.is_burn});
+                socket.emit('play-multiple', {"game_id" : this.props.game_id, "cards" : totalSelected, "username" : this.props.username, "is_burn" : res.data.is_burn});
 
                 //Autodraw cards for the player if auto draw is turned on
                 if (this.props.settings.autoDraw) {
@@ -379,11 +441,19 @@ class Game extends Component {
 
     }
 
-    selectCardHandler = (card) => {
-        if (this.state.selectedHandCards.indexOf(card) !== -1) {
-            this.setState({selectedHandCards : this.state.selectedHandCards.filter(item => item !== card)});
+    selectCardHandler = (card, fromUntouched) => {
+        if (fromUntouched) {
+            if (this.state.selectedUntouchedCards.indexOf(card) !== -1) {
+                this.setState({selectedUntouchedCards : this.state.selectedUntouchedCards.filter(item => item !== card)});
+            } else {
+                this.setState({selectedUntouchedCards : [...this.state.selectedUntouchedCards, card]});
+            }
         } else {
-            this.setState({selectedHandCards : [...this.state.selectedHandCards, card]});
+            if (this.state.selectedHandCards.indexOf(card) !== -1) {
+                this.setState({selectedHandCards : this.state.selectedHandCards.filter(item => item !== card)});
+            } else {
+                this.setState({selectedHandCards : [...this.state.selectedHandCards, card]});
+            }
         }
     }
 
@@ -468,6 +538,14 @@ class Game extends Component {
                 }
             });
         }
+    }
+
+    resetSwapSelectionHandler = () => {
+        this.setState({
+            selectedHandCards : [],
+            selectedUntouchedCards : [],
+            numReset : this.state.numReset + 1
+        });
     }
 
     playHiddenHandler = (cardPosition) => {
@@ -641,15 +719,22 @@ class Game extends Component {
     }
 
     discardPileClickHandler = () => {
-        let discardedCards = this.props.discard_pile.map((card) => {
-            return (
-                <Card float={true} key={card} number={card}/>
-            )
-        });
-        this.setState({
-            popUpMsg : discardedCards,
-            popUp : true
-        });
+        if (this.props.settings.showDiscard) {
+            let discardedCards = this.props.discard_pile.map((card) => {
+                return (
+                    <Card float={true} key={card} number={card}/>
+                )
+            });
+            this.setState({
+                popUpMsg : discardedCards,
+                popUp : true
+            });
+        } else {
+            this.setState({
+                popUpMsg : "You cannot view the discard pile.",
+                popUp : true
+            });
+        }
     }
 
     takeFromCenterHandler = () => {
@@ -729,11 +814,104 @@ class Game extends Component {
         if (!this.state.gameEnded) {
             socket.emit('leave-game', {"username" : this.props.username, "game_id" : this.props.game_id});
         }
-        socket.emit('disconnect');
+        socket.emit('disconnect-from-room', {"game_id" : this.props.game_id});
         socket.off();
         this.props.resetState();
         this.props.history.push('/');
     }
+
+    playAgainHandler = () => {
+        if (!this.state.gameEnded) {
+            this.setState({
+                popUpMsg: "The game has not ended yet.",
+                popUp: true
+            });
+            return;
+        }
+        if (this.state.newGameID === "" && this.props.username === this.props.player_names[0]) {
+            this.setState({
+                popUpMsg: "Creating a new room now...",
+                popUp: true
+            });
+
+            //Attempt to create the room
+            axios.post(SERVER('room/create'), {
+                username : this.props.username
+            }).then((res) => {
+                console.log(res.data);
+                if (!res.data.success) {
+                    this.setState({
+                        room: "",
+                        popUpMsg: res.data.err_msg,
+                        popUp: true
+                    });       
+                } else {
+                    //If successful, save all the necessary info
+                    this.setState({
+                        popUpMsg: "",
+                        popUp: false                   
+                    });
+                    
+                    let currentUsername = this.props.username;
+                    socket.emit('new-room', {"game_id" : this.props.game_id, "new_game_id" : res.data.room_id});
+                    socket.emit('disconnect-from-room', {"game_id" : this.props.game_id});
+                    socket.off();
+
+                    this.props.resetState();
+                    this.props.updatePlayerNames([currentUsername]);
+                    this.props.updateUserID(res.data.user_id);
+                    this.props.updateGameID(res.data.room_id);
+                    this.props.updateUsername(currentUsername);
+
+                    this.props.history.push('/lobby');
+                }
+            });
+        } else if (this.state.newGameID === "") {
+            this.setState({
+                popUpMsg: "Waiting on the VIP to create the new game room. You will be automatically redirected to the new room when it's made.",
+                popUp: true,
+                waitingForNewGame : true
+            });
+        } else {
+            this.setState({
+                popUpMsg: "Redirecting to new room...",
+                popUp: true
+            });
+            //Attempt to join the room
+            axios.post(SERVER('room/' + this.state.newGameID + '/join'), {
+                username : this.props.username
+            }).then((res) => {
+                if (!res.data.success) {
+                    this.setState({
+                        room: "",
+                        popUpMsg: res.data.err_msg,
+                        popUp: true
+                    });       
+                } else {
+                    //If room is found, save the necessary info and redirect player to game lobby
+                    this.setState({
+                        popUpMsg: "",
+                        popUp: false                   
+                    });
+
+                    let currentUsername = this.props.username;
+                    socket.emit('disconnect-from-room', {"game_id" : this.props.game_id});
+                    socket.off();
+    
+                    this.props.resetState();
+                    this.props.updatePlayerNames([...res.data.players_in_room, currentUsername]);
+                    this.props.updateUserID(res.data.user_id);
+                    this.props.updateGameID(this.state.newGameID);
+                    this.props.updateUsername(currentUsername);
+    
+                    this.props.history.push('/lobby');       
+                }  
+            });
+        }
+        
+    }
+
+    //MESSAGE DISPLAYERS
 
     displayInactivityMessage = () => {
         this.setState({
@@ -758,7 +936,12 @@ class Game extends Component {
             popUpMsg : (
                 <Container>
                     <Row><Col><div className="center-div">{message}</div></Col></Row>
-                    <Row><Col><div className="center-div"><Button className="take-center-btn" onClick={this.returnHomeHandler} variant="secondary" size="sm">Leave Game</Button></div></Col></Row>
+                    <Row><Col>
+                        <div className="center-div">
+                            <Button className="take-center-btn" onClick={this.returnHomeHandler} variant="secondary" size="sm">Leave Game</Button>
+                            <Button className="take-center-btn" onClick={this.playAgainHandler} variant="secondary" size="sm">Play Again</Button>
+                        </div>
+                    </Col></Row>
                 </Container>
             ),
             popUp : true
@@ -771,7 +954,12 @@ class Game extends Component {
             popUpMsg : (
                 <Container>
                     <Row><Col><div className="center-div">The game has ended.</div></Col></Row>
-                    <Row><Col><div className="center-div"><Button className="take-center-btn" onClick={this.returnHomeHandler} variant="secondary" size="sm">Leave Game</Button></div></Col></Row>
+                    <Row><Col>
+                        <div className="center-div">
+                            <Button className="take-center-btn" onClick={this.returnHomeHandler} variant="secondary" size="sm">Leave Game</Button>
+                            <Button className="take-center-btn" onClick={this.playAgainHandler} variant="secondary" size="sm">Play Again</Button>
+                        </div>
+                    </Col></Row>
                 </Container>
             ),
             popUp : true
@@ -840,24 +1028,26 @@ class Game extends Component {
     }
 
     componentDidMount() {
-        axios.get(SERVER('game/' + this.props.game_id + '/' + this.props.user_id + '/state')).then((res) => {
-            if (!res.data.found) {
-                this.displayInactivityMessage();
-            }
-            this.props.updateState({
-                players : res.data.other_players,
-                deck : res.data.draw_deck_size,
-                played_pile : res.data.played_pile,
-                discard_pile : res.data.discard_pile,
-                hand : res.data.hand,
-                untouched_hand : res.data.untouched_hand,
-                hidden_hand : res.data.hidden_hand,
-                playable_cards : res.data.playable_cards,
-                turn_at : res.data.turn_at
-            });
-        }).catch((error) => {
-            this.displayInactivityMessage();
-        });
+        if (this.props.game_id) {
+            axios.get(SERVER('game/' + this.props.game_id + '/' + this.props.user_id + '/state')).then((res) => {
+                    if (!res.data.found) {
+                        this.displayInactivityMessage();
+                    }
+                    this.props.updateState({
+                        players : res.data.other_players,
+                        deck : res.data.draw_deck_size,
+                        played_pile : res.data.played_pile,
+                        discard_pile : res.data.discard_pile,
+                        hand : res.data.hand,
+                        untouched_hand : res.data.untouched_hand,
+                        hidden_hand : res.data.hidden_hand,
+                        playable_cards : res.data.playable_cards,
+                        turn_at : res.data.turn_at
+                    });
+                }).catch((error) => {
+                    this.displayInactivityMessage();
+            }); 
+        }
 
         this.setState({
             popUpMsg : "Swapping Phase! Select cards to swap between your hand and the 3 table cards. Click 'Lock In' when finished.",
@@ -1025,11 +1215,7 @@ class Game extends Component {
                     this.setState({gameEnded : true});
                 }
 
-
-
             });
-
-
         });
 
         socket.on('game-data-lost', () => {
@@ -1040,8 +1226,20 @@ class Game extends Component {
             this.props.updateMessages([...this.props.messages, {username : "", message : `${username} has disconnected from the room. Please leave this room and start a new game.`}]);
         });
 
-        window.addEventListener("beforeunload", (ev) => 
-        {  
+        socket.on('created-new-room', ({new_game_id}) => {
+            this.setState({newGameID : new_game_id});
+            if (this.state.waitingForNewGame) {
+                this.setState({
+                    popUp : true,
+                    popUpMsg : "A new game has been created!"
+                });
+                setTimeout(() => {
+                    this.playAgainHandler();
+                }, 1200);
+            }
+        });
+
+        window.addEventListener("beforeunload", (ev) => {  
             ev.preventDefault();
             return this.returnHomeHandler();
         });
@@ -1076,13 +1274,13 @@ class Game extends Component {
         return (
             <>
                 <Card clickable={true} clickFunct={this.deckClickHandler} float={true} blank={this.props.deck === 0} faceDown={true}/>
-                <p>Deck (Cards Left: {this.props.deck}) (Click to draw)</p>
+                <p>Deck (Cards Left: {this.props.deck}) {this.props.settings.autoDraw ? "(Auto-draw is on)" : "(Click to draw)"}</p>
                 <br></br>
                 <Card clickable={true} clickFunct={this.playPileClickHandler} float={true} blank={topPlayed === 0} number={topPlayed}/>
                 <p>Played Pile (Click to view)</p>
                 <br></br>
                 <Card clickable={true} clickFunct={this.discardPileClickHandler} float={true} blank={topDiscard === 0} number={topDiscard}/>
-                <p>Discard Pile (Click to view)</p>
+                <p>Discard Pile {this.props.settings.showDiscard ? "(Click to view)" : null}</p>
                 <br></br>
             </>
         );
@@ -1099,6 +1297,7 @@ class Game extends Component {
             <>
                 <Button className="help-btn" onClick={this.displayHelpMessage} variant="secondary">Help</Button>
                 <Button className="help-btn" onClick={this.displayWarningLeaveMessage} variant="secondary">Leave Game</Button>
+                {this.state.gameEnded ? (<Button className="help-btn" onClick={this.playAgainHandler} variant="secondary">Play Again</Button>) : null}
             </>
         );
 
@@ -1115,6 +1314,11 @@ class Game extends Component {
                 {
                     this.state.swapPhase ? 
                     (<Button className="swap-btn" onClick={this.swapCardHandler} variant="secondary">Swap</Button>):
+                    null
+                }
+                {
+                    this.state.swapPhase ? 
+                    (<Button className="swap-btn" onClick={this.resetSwapSelectionHandler} variant="secondary">Reset</Button>):
                     null
                 }
                 {
@@ -1141,9 +1345,9 @@ class Game extends Component {
                 if (player === this.props.username) {
                     return (
                         <>
-                            <Card highlight={this.state.swapPhase} clickable={true} float={true} playCard={this.cardPlayHandler} fromUntouched={true} blank={this.props.untouched_hand[0] === -1} key={this.props.username + '-untouched0-' + this.props.untouched_hand[0]} number={this.props.untouched_hand[0]}/>
-                            <Card highlight={this.state.swapPhase} clickable={true} float={true} playCard={this.cardPlayHandler} fromUntouched={true} blank={this.props.untouched_hand[1] === -1} key={this.props.username + '-untouched1-' + this.props.untouched_hand[1]} number={this.props.untouched_hand[1]}/>
-                            <Card highlight={this.state.swapPhase} clickable={true} float={true} playCard={this.cardPlayHandler} fromUntouched={true} blank={this.props.untouched_hand[2] === -1} key={this.props.username + '-untouched2-' + this.props.untouched_hand[2]} number={this.props.untouched_hand[2]}/>
+                            <Card highlight={this.state.swapPhase} clickable={true} float={true} playCard={this.cardPlayHandler} fromUntouched={true} blank={this.props.untouched_hand[0] === -1} key={this.props.username + '-untouched0-' + this.props.untouched_hand[0] + this.state.numReset} number={this.props.untouched_hand[0]}/>
+                            <Card highlight={this.state.swapPhase} clickable={true} float={true} playCard={this.cardPlayHandler} fromUntouched={true} blank={this.props.untouched_hand[1] === -1} key={this.props.username + '-untouched1-' + this.props.untouched_hand[1] + this.state.numReset} number={this.props.untouched_hand[1]}/>
+                            <Card highlight={this.state.swapPhase} clickable={true} float={true} playCard={this.cardPlayHandler} fromUntouched={true} blank={this.props.untouched_hand[2] === -1} key={this.props.username + '-untouched2-' + this.props.untouched_hand[2] + this.state.numReset} number={this.props.untouched_hand[2]}/>
                             <Card clickable={true} clickFunct={() => {this.playHiddenHandler(0)}} float={true} blank={this.props.hidden_hand[0]} faceDown={!this.props.hidden_hand[0]} key={this.props.username + '-hidden0-' + this.props.hidden_hand[0]}/>
                             <Card clickable={true} clickFunct={() => {this.playHiddenHandler(1)}} float={true} blank={this.props.hidden_hand[1]} faceDown={!this.props.hidden_hand[1]} key={this.props.username + '-hidden1-' + this.props.hidden_hand[1]}/>
                             <Card clickable={true} clickFunct={() => {this.playHiddenHandler(2)}} float={true} blank={this.props.hidden_hand[2]} faceDown={!this.props.hidden_hand[2]} key={this.props.username + '-hidden2-' + this.props.hidden_hand[2]}/>
@@ -1173,7 +1377,7 @@ class Game extends Component {
 
 
             hand = this.props.hand.map((card) => {
-                return (<Card highlight={this.state.swapPhase} clickable={true} float={true} playCard={this.cardPlayHandler} fromUntouched={false} key={card} number={card}/>)
+                return (<Card highlight={this.state.swapPhase} clickable={true} float={true} playCard={this.cardPlayHandler} fromUntouched={false} key={card + " " + this.state.numReset} number={card}/>)
             });
 
             playerNames = [

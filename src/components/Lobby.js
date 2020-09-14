@@ -54,8 +54,9 @@ class Lobby extends Component {
                 }
             })
         } 
-        socket.emit('disconnect');
+        
         socket.emit('leave', {"username" : this.props.username, "game_id" : this.props.game_id});
+        socket.emit('disconnect-from-room', {"game_id" : this.props.game_id});
         socket.off();
         this.props.resetState();
         this.props.history.push('/');
@@ -137,6 +138,18 @@ class Lobby extends Component {
                             </div>
                         </Col>
                     </Row>
+                    <Row><hr></hr></Row>
+                    <Row>
+                        <Col>
+                            View Discard Pile: 
+                        </Col>
+                        <Col>
+                            <div>
+                                <Button onClick={() => {this.updateShowDiscard(true);}} className="home-btn" variant={this.props.settings.showDiscard ? "secondary" : "outline-secondary"}>On</Button>
+                                <Button onClick={() => {this.updateShowDiscard(false);}} className="home-btn" variant={!this.props.settings.showDiscard ? "secondary" : "outline-secondary"}>Off</Button>
+                            </div>
+                        </Col>
+                    </Row>
                 </Container>
             )
         });
@@ -154,7 +167,8 @@ class Lobby extends Component {
 
         this.props.updateSettings({
             playMult : setting,
-            autoDraw : this.props.settings.autoDraw
+            autoDraw : this.props.settings.autoDraw,
+            showDiscard : this.props.settings.showDiscard
         });
 
         setTimeout(() => {
@@ -175,9 +189,32 @@ class Lobby extends Component {
 
         this.props.updateSettings({
             playMult : this.props.settings.playMult,
-            autoDraw : setting
+            autoDraw : setting,
+            showDiscard : this.props.settings.showDiscard
         });
         
+
+        setTimeout(() => {
+            this.displaySettings();
+            socket.emit('edit-settings', {"game_id" : this.props.game_id, "settings" : this.props.settings});
+        }, 200);
+    }
+
+    updateShowDiscard = (setting) => {
+        if (this.props.player_names[0] !== this.props.username) {
+            this.setState({popUpMsg : "Only the VIP can modify the game settings."});
+            return;
+        }
+
+        if (setting === this.props.settings.showDiscard) {
+            return;
+        }
+
+        this.props.updateSettings({
+            playMult : this.props.settings.playMult,
+            autoDraw : this.props.settings.autoDraw,
+            showDiscard : setting
+        });
 
         setTimeout(() => {
             this.displaySettings();
@@ -190,10 +227,13 @@ class Lobby extends Component {
 
         this.props.updateSettings({
             playMult : true,
-            autoDraw : false
+            autoDraw : false,
+            showDiscard : true
         });
         
-        socket.emit('join', {"username" : this.props.username, "game_id" : this.props.game_id});
+        if (this.props.game_id) {
+            socket.emit('join', {"username" : this.props.username, "game_id" : this.props.game_id});
+        }
 
         //Listening for players joining/leaving
         socket.on('player-join', ({username}) => {
@@ -206,14 +246,14 @@ class Lobby extends Component {
             }
         });
         socket.on('player-leave', ({username}) => {
-            console.log(`${username} joined the room.`);
+            console.log(`${username} left the room.`);
             this.props.updatePlayerNames(this.props.player_names.filter((name) => {return name !== username}));
         });
         socket.on('removed-player', ({removed_player}) => {
             console.log(`${removed_player} has been removed the room.`);
             if (this.props.username === removed_player) {
                 alert("You have been removed from the room");
-                socket.emit('disconnect');
+                socket.emit('disconnect-from-room', {"game_id" : this.props.game_id});
                 socket.off();
                 this.props.resetState();
                 this.props.history.push('/');
@@ -225,7 +265,8 @@ class Lobby extends Component {
         socket.on('settings-changed', ({settings}) => {
             this.props.updateSettings({
                 playMult : settings.playMult,
-                autoDraw : settings.autoDraw
+                autoDraw : settings.autoDraw,
+                showDiscard : settings.showDiscard
             });
         });
         socket.on('game-start', () => {
@@ -251,6 +292,7 @@ class Lobby extends Component {
         {  
             ev.preventDefault();
             socket.emit('leave', {"username" : this.props.username, "game_id" : this.props.game_id});
+            socket.emit('disconnect-from-room', {"game_id" : this.props.game_id});
             socket.off();
             this.props.resetState();
         });
@@ -259,6 +301,7 @@ class Lobby extends Component {
             ev.preventDefault();
             alert('Please use the "Leave Room" button next time when leaving this page.');
             socket.emit('leave', {"username" : this.props.username, "game_id" : this.props.game_id});
+            socket.emit('disconnect-from-room', {"game_id" : this.props.game_id});
             socket.off();
             this.props.resetState();
             this.props.history.push('/');
