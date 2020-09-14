@@ -938,8 +938,8 @@ class Game extends Component {
                     <Row><Col><div className="center-div">{message}</div></Col></Row>
                     <Row><Col>
                         <div className="center-div">
-                            <Button className="take-center-btn" onClick={this.returnHomeHandler} variant="secondary" size="sm">Leave Game</Button>
-                            <Button className="take-center-btn" onClick={this.playAgainHandler} variant="secondary" size="sm">Play Again</Button>
+                            <Button className="endgame-btn" onClick={this.returnHomeHandler} variant="secondary" size="sm">Leave Game</Button>
+                            <Button className="endgame-btn" onClick={this.playAgainHandler} variant="secondary" size="sm">Play Again</Button>
                         </div>
                     </Col></Row>
                 </Container>
@@ -956,8 +956,8 @@ class Game extends Component {
                     <Row><Col><div className="center-div">The game has ended.</div></Col></Row>
                     <Row><Col>
                         <div className="center-div">
-                            <Button className="take-center-btn" onClick={this.returnHomeHandler} variant="secondary" size="sm">Leave Game</Button>
-                            <Button className="take-center-btn" onClick={this.playAgainHandler} variant="secondary" size="sm">Play Again</Button>
+                            <Button className="endgame-btn" onClick={this.returnHomeHandler} variant="secondary" size="sm">Leave Game</Button>
+                            <Button className="endgame-btn" onClick={this.playAgainHandler} variant="secondary" size="sm">Play Again</Button>
                         </div>
                     </Col></Row>
                 </Container>
@@ -1235,7 +1235,7 @@ class Game extends Component {
                 });
                 setTimeout(() => {
                     this.playAgainHandler();
-                }, 1200);
+                }, 1000 * Math.abs(this.props.player_names.indexOf(this.props.username)));
             }
         });
 

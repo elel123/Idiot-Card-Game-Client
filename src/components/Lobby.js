@@ -227,7 +227,7 @@ class Lobby extends Component {
 
         this.props.updateSettings({
             playMult : true,
-            autoDraw : false,
+            autoDraw : true,
             showDiscard : true
         });
         
