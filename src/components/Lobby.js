@@ -231,6 +231,10 @@ class Lobby extends Component {
                 socket.emit('leave', {"username" : this.props.username, "game_id" : this.props.game_id});
                 socket.emit('disconnect-from-room', {"game_id" : this.props.game_id});
                 socket.off();
+
+                //Remove the user entry from the db
+                axios.delete(SERVER('user/' + this.props.user_id));
+
                 this.props.resetState();
                 this.props.history.push('/');
             }
