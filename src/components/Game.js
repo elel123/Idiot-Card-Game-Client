@@ -390,7 +390,7 @@ class Game extends Component {
                     this.props.updateTurnAt(index === this.props.player_names.length - 1 ? this.props.player_names[0] : this.props.player_names[index + 1]);
                 }
 
-                if (!this.state.popUp && this.props.hand.length <= 1 && this.props.deck > 0) {
+                if (!this.props.settings.autoDraw && !this.state.popUp && this.props.hand.length <= 1 && this.props.deck > 0) {
                     this.setState({
                         popUpMsg : "Remember to draw a card for every card you play!",
                         popUp : true
@@ -433,7 +433,7 @@ class Game extends Component {
                     for (let i = 0; i < numDraw; i++) {
                         setTimeout(() => {
                             this.deckClickHandler();
-                        }, 1500 * i);
+                        }, 1200 * i);
                     }
                 }
             }
@@ -1273,7 +1273,10 @@ class Game extends Component {
         let topDiscard = this.props.discard_pile.length === 0 ? 0 : this.props.discard_pile[this.props.discard_pile.length - 1];
         return (
             <>
-                <Card clickable={true} clickFunct={this.deckClickHandler} float={true} blank={this.props.deck === 0} faceDown={true}/>
+                {!this.props.settings.autoDraw ? 
+                    (<Card clickable={true} clickFunct={this.deckClickHandler} float={true} blank={this.props.deck === 0} faceDown={true}/>) :
+                    (<Card float={true} blank={this.props.deck === 0} faceDown={true}/>)
+                }
                 <p>Deck (Cards Left: {this.props.deck}) {this.props.settings.autoDraw ? "(Auto-draw is on)" : "(Click to draw)"}</p>
                 <br></br>
                 <Card clickable={true} clickFunct={this.playPileClickHandler} float={true} blank={topPlayed === 0} number={topPlayed}/>

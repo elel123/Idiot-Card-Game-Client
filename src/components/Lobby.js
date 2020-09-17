@@ -52,14 +52,16 @@ class Lobby extends Component {
                 if (!res.data.success) {
                     alert("Error: Recommended to restart game.");
                 }
-            })
-        } 
-        
-        socket.emit('leave', {"username" : this.props.username, "game_id" : this.props.game_id});
-        socket.emit('disconnect-from-room', {"game_id" : this.props.game_id});
-        socket.off();
-        this.props.resetState();
-        this.props.history.push('/');
+                socket.emit('leave', {"username" : this.props.username, "game_id" : this.props.game_id});
+                socket.emit('disconnect-from-room', {"game_id" : this.props.game_id});
+                socket.off();
+                this.props.resetState();
+                this.props.history.push('/');
+            });
+        } else {
+            this.props.resetState();
+            this.props.history.push('/');
+        }
     }
 
     startGameHandler = (event) => {
@@ -222,6 +224,19 @@ class Lobby extends Component {
         }, 200);
     }
 
+    checkPlayerConnection = () => {
+        axios.get(SERVER('room/' + this.props.game_id + '/' + this.props.user_id + '/checkInRoom')).then((res) => {
+            if (!res.data.found) {
+                alert("Disconnected from the room.");
+                socket.emit('leave', {"username" : this.props.username, "game_id" : this.props.game_id});
+                socket.emit('disconnect-from-room', {"game_id" : this.props.game_id});
+                socket.off();
+                this.props.resetState();
+                this.props.history.push('/');
+            }
+        });
+    }
+
     //Lifecycle Methods
     componentDidMount() {
 
@@ -244,10 +259,13 @@ class Lobby extends Component {
             if (this.props.player_names[0] === this.props.username) {
                 socket.emit('edit-settings', {"game_id" : this.props.game_id, "settings" : this.props.settings});
             }
+
+            this.checkPlayerConnection();
         });
         socket.on('player-leave', ({username}) => {
             console.log(`${username} left the room.`);
             this.props.updatePlayerNames(this.props.player_names.filter((name) => {return name !== username}));
+            this.checkPlayerConnection();
         });
         socket.on('removed-player', ({removed_player}) => {
             console.log(`${removed_player} has been removed the room.`);

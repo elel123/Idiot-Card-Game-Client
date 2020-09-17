@@ -182,7 +182,7 @@ class Home extends Component {
                 <hr className="hidden-line"></hr>
                 <hr className="hidden-line"></hr>
                 <hr className="hidden-line"></hr>
-                <p>(Version 2020.9.14)</p>
+                <p>(Version 2020.9.16)</p>
 
                 <Popup open={this.state.popUp} onClose={this.closePopUp} modal closeOnDocumentClick>
                     <div>{this.state.popUpMsg}</div>
