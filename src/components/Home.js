@@ -3,6 +3,7 @@ import { connect } from 'react-redux'; //used to take data from redux store and 
 import { SERVER } from '../constants/envConstants';
 import axios from 'axios';
 import Popup from 'reactjs-popup';
+import { Card } from './Card/Card';
 
 import {
     Jumbotron, 
@@ -182,7 +183,8 @@ class Home extends Component {
                 <hr className="hidden-line"></hr>
                 <hr className="hidden-line"></hr>
                 <hr className="hidden-line"></hr>
-                <p>(Version 2020.9.16)</p>
+                {/* <Card float={true} blank={this.props.hidden_hand[0]} cardBack={"Idiot"} faceDown={true}/> */}
+                <p>(Version 2020.10.4)</p>
 
                 <Popup open={this.state.popUp} onClose={this.closePopUp} modal closeOnDocumentClick>
                     <div>{this.state.popUpMsg}</div>

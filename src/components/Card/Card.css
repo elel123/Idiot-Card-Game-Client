@@ -5,6 +5,10 @@
     margin-left: 0px;
 }
 
+.back {
+    overflow: hidden;
+}
+
 .float {
     float: left;
 }

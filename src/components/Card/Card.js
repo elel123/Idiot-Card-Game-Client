@@ -1,4 +1,8 @@
 import React, {useState} from 'react';
+import shiba from './shiba.png';
+import idiot from './idiot.png';
+import classic from './classic.png';
+import pokemon from './pokemon.png';
 
 import './Card.css';
 
@@ -55,8 +59,22 @@ export const Card = (props) => {
             <div onClick={clickHandler} className={"card " + float + " " + click + " " + (highlight && props.clickable ? "highlight" : null)}></div>
         )
     } else if (props.faceDown) {
+        let cardBack;
+
+        if (props.cardBack === "Shiba-Inu") {
+            cardBack = shiba;
+        } else if (props.cardBack === "Idiot") {
+            cardBack = idiot;
+        } else if (props.cardBack === "Pokemon") { 
+            cardBack = pokemon;
+        } else {
+            cardBack = classic;
+        }
+
         return (
-            <div onClick={clickHandler} className={"card " + float + " " + click + " " + (highlight && props.clickable ? "highlight" : null)}>X</div>
+            <div onClick={clickHandler} className={"card back " + float + " " + click + " " + (highlight && props.clickable ? "highlight" : null)}>
+                <img src={cardBack} width="38" height="50"></img>
+            </div>
         )
     } else {
         return (

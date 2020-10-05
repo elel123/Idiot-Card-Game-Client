@@ -21,6 +21,8 @@ class Lobby extends Component {
     state = {
         popUp : false,
         popUpMsg : "",
+
+        cardDesigns : ["Classic", "Shiba-Inu", "Idiot", "Pokemon"]
     }
 
     closePopUp = (event) => {
@@ -152,9 +154,40 @@ class Lobby extends Component {
                             </div>
                         </Col>
                     </Row>
+                    <Row><hr></hr></Row>
+                    <Row>
+                        <Col>
+                            Card Back Design: 
+                        </Col>
+                        <Col>
+                            <div>
+                                <Button onClick={() => {this.displayCardDesigns();}} className="home-btn" variant="secondary">{this.props.settings.cardDesign}</Button>
+                            </div>
+                        </Col>
+                    </Row>
                 </Container>
             )
         });
+    }
+
+    displayCardDesigns = () => {
+        if (this.props.player_names[0] !== this.props.username) {
+            this.setState({popUpMsg : "Only the VIP can modify the game settings."});
+            return;
+        }
+
+        let designIndex = this.state.cardDesigns.indexOf(this.props.settings.cardDesign);
+        let nextDesignIndex = (designIndex + 1 === this.state.cardDesigns.length) ? 0 : designIndex + 1;
+
+        this.props.updateSettings({
+            ...this.props.settings,
+            cardDesign : this.state.cardDesigns[nextDesignIndex]
+        });
+
+        setTimeout(() => {
+            this.displaySettings();
+            socket.emit('edit-settings', {"game_id" : this.props.game_id, "settings" : this.props.settings});
+        }, 200);
     }
 
     updatePlayMult = (setting) => {
@@ -168,9 +201,8 @@ class Lobby extends Component {
         }
 
         this.props.updateSettings({
-            playMult : setting,
-            autoDraw : this.props.settings.autoDraw,
-            showDiscard : this.props.settings.showDiscard
+            ...this.props.settings,
+            playMult : setting
         });
 
         setTimeout(() => {
@@ -190,9 +222,8 @@ class Lobby extends Component {
         }
 
         this.props.updateSettings({
-            playMult : this.props.settings.playMult,
-            autoDraw : setting,
-            showDiscard : this.props.settings.showDiscard
+            ...this.props.settings,
+            autoDraw : setting
         });
         
 
@@ -213,8 +244,7 @@ class Lobby extends Component {
         }
 
         this.props.updateSettings({
-            playMult : this.props.settings.playMult,
-            autoDraw : this.props.settings.autoDraw,
+            ...this.props.settings,
             showDiscard : setting
         });
 
@@ -247,7 +277,8 @@ class Lobby extends Component {
         this.props.updateSettings({
             playMult : true,
             autoDraw : true,
-            showDiscard : true
+            showDiscard : true,
+            cardDesign : "Classic"
         });
         
         if (this.props.game_id) {
@@ -286,9 +317,7 @@ class Lobby extends Component {
         });
         socket.on('settings-changed', ({settings}) => {
             this.props.updateSettings({
-                playMult : settings.playMult,
-                autoDraw : settings.autoDraw,
-                showDiscard : settings.showDiscard
+                ...settings
             });
         });
         socket.on('game-start', () => {

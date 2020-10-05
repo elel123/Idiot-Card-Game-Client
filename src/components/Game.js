@@ -279,9 +279,9 @@ class Game extends Component {
                         <Row><Col><div className="center-div">Select the cards that you want to play together as a combo (must be of same number).</div></Col></Row>
                         <Row><hr></hr></Row>
                         <Row className="justify-content-md-center">
-                            <Col xs></Col>
+                            {handDisplay.length > 12 ? null : (<Col xs></Col>)}
                             <Col>{handDisplay}</Col>
-                            <Col xs></Col>
+                            {handDisplay.length > 12 ? null : (<Col xs></Col>)}
                         </Row>
                         <Row><hr></hr></Row>
                         <Row><Col><div className="center-div"><Button className="play-mult-btn" onClick={this.multipleCardPlayHandlerHelper} variant="outline-secondary" size="sm">Play These Cards</Button></div></Col></Row>
@@ -433,7 +433,7 @@ class Game extends Component {
                     for (let i = 0; i < numDraw; i++) {
                         setTimeout(() => {
                             this.deckClickHandler();
-                        }, 1200 * i);
+                        }, 1000 * i);
                     }
                 }
             }
@@ -751,28 +751,85 @@ class Game extends Component {
                 popUp : true
             });
         } else {
-            let combinedCards = (this.props.hand.length > 0 || this.props.deck.length > 0) ? [...this.props.hand, ...this.props.played_pile] : 
-                                [...this.props.untouched_hand.filter(card => card !== -1), ...this.props.played_pile];
-            let display = combinedCards.map((card) => {
-                return (<Card clickable={true} float={true} playCard={() => {this.takeFromCenterHandlerHelper(card)}} fromUntouched={false} key={card} number={card}/>)
-            });
-            this.setState({
-                popUpMsg : (
-                    <Container>
-                        <Row>Choose the card you want to leave in the center from your hand, the 3 face-up cards on the table (if your hand is empty), or the center pile (this will count as a turn).</Row>
-                        <Row><hr></hr></Row>
-                        <Row>{display}</Row>
-                    </Container>
-                ),
-                popUp : true
-            });
+            this.setState({selectedHandCards : []});
+            this.setState({selectedUntouchedCards : []});
+            
+            if (this.props.settings.playMult) {
+                let display = [];
+                //Determine if we display the untouched cards in the selection or not
+                if (this.props.hand.length > 0 || this.props.deck > 0) {
+                    display = ([...this.props.hand, ...this.props.played_pile]).map((card) => {
+                        return (<Card highlight={true} clickable={true} float={true} playCard={() => {this.selectCardHandler(card, false)}} fromUntouched={false} key={card} number={card}/>)
+                    });
+                } else {
+                    display = ([...this.props.untouched_hand.filter(card => card !== -1), ...this.props.played_pile]).map((card) => {
+                        return (<Card highlight={true} clickable={true} float={true} playCard={() => {this.selectCardHandler(card, false)}} fromUntouched={false} key={card} number={card}/>)
+                    });
+                }
+                this.setState({
+                    popUpMsg : (
+                        <Container>
+                            <Row><Col>
+                                <div className="center-div">
+                                    Choose the cards you want to leave in the center from your hand, 
+                                    the 3 face-up cards on the table (if your hand is empty), or the center pile 
+                                    (this will count as a turn). If selecting multiple cards, they must be the same number.
+                                </div>
+                            </Col></Row>
+                            <Row><hr></hr></Row>
+                            <Row className="justify-content-md-center">
+                                {display.length > 12 ? null : (<Col xs></Col>)}
+                                <Col>{display}</Col>
+                                {display.length > 12 ? null : (<Col xs></Col>)}
+                            </Row>
+                            <Row><hr></hr></Row>
+                            <Row><Col><div className="center-div"><Button className="play-mult-btn" onClick={() => {this.takeFromCenterHandlerHelper([...this.state.selectedHandCards])}} variant="outline-secondary" size="sm">Leave These Cards</Button></div></Col></Row>
+                        </Container>
+                    ),
+                    popUp : true
+                });
+            } else {
+                let combinedCards = (this.props.hand.length > 0 || this.props.deck > 0) ? [...this.props.hand, ...this.props.played_pile] : 
+                                    [...this.props.untouched_hand.filter(card => card !== -1), ...this.props.played_pile];
+                let display = combinedCards.map((card) => {
+                    return (<Card clickable={true} float={true} playCard={() => {this.takeFromCenterHandlerHelper([card])}} fromUntouched={false} key={card} number={card}/>)
+                });
+                this.setState({
+                    popUpMsg : (
+                        <Container>
+                            <Row>Choose the card you want to leave in the center from your hand, the 3 face-up cards on the table (if your hand is empty), or the center pile (this will count as a turn).</Row>
+                            <Row><hr></hr></Row>
+                            <Row>{display}</Row>
+                        </Container>
+                    ),
+                    popUp : true
+                });
+            }
         }
     }
 
-    takeFromCenterHandlerHelper = (card) => {
+    takeFromCenterHandlerHelper = (cards) => {
+
+        if (cards.length == 0) {
+            return;
+        }
+
+        //Since the users are only displayed the cards that they can select, only need to check if they're equal
+        let firstCard = cards[0] % 13;
+        for (let card of cards) {
+            //Check if all the selected cards are the same
+            if (card % 13 !== firstCard) {
+                this.setState({
+                    popUpMsg : "The cards selected are not the same number. Only duplicates can be selected if you want to leave multiple cards in the center.",
+                    popUp : true
+                });
+                return;
+            }
+        }
+
         axios.put(SERVER('game/' + this.props.game_id + '/takeFromCenter'), {
             user_id : this.props.user_id,
-            chosen_card : card
+            chosen_cards : cards
         }).then((res) => {
             if (!res.data.success) {
                 this.setState({
@@ -791,21 +848,58 @@ class Game extends Component {
                     haveToTakeCenter : false
                 });
                 //Transfer the center cards to the player's hands (and remove the chosen card from hand or untouched hand, wherever it is)
-                this.props.updateHand([...this.props.hand.filter(item => item !== card), ...this.props.played_pile.filter(item => item !== card)]);
-                this.props.updateUntouchedHand(this.props.untouched_hand.map((item) => {return (item === card) ? -1 : item}));
+                this.props.updateHand([...this.props.hand.filter(item => cards.indexOf(item) === -1), ...this.props.played_pile.filter(item => cards.indexOf(item) === -1)]);
+                this.props.updateUntouchedHand(this.props.untouched_hand.map((item) => {return (cards.indexOf(item) !== -1) ? -1 : item}));
                 this.props.updateCenter({
                     deck : this.props.deck,
-                    played_pile : [card],
+                    played_pile : cards,
                     discard_pile : this.props.discard_pile
                 });
 
-                //Update the turn to the next player
-                let index = this.props.player_names.indexOf(this.props.username);
-                this.props.updateTurnAt(index === this.props.player_names.length - 1 ? this.props.player_names[0] : this.props.player_names[index + 1]);
-
                 this.props.updateMessages([...this.props.messages, {username : "", message : `${this.props.username} took from the center!`}]);
                 //Notify other players of the turn
-                socket.emit('take-center', {"game_id" : this.props.game_id, "username" : this.props.username});
+                socket.emit('take-center', {"game_id" : this.props.game_id, "username" : this.props.username, "is_burn" : res.data.is_burn});
+
+                if (res.data.go_again) {
+                    if (res.data.is_burn) { 
+                        this.setState({
+                            popUpMsg : "You burned the play pile! You can play another card! Remember to draw a card for every card you play!",
+                            popUp : true
+                        });
+                        this.props.updateMessages([...this.props.messages, {username : "", message : "The play pile was burned!"}]);
+                        this.props.updateCenter({
+                            deck : this.props.deck,
+                            played_pile : [],
+                            discard_pile : [...this.props.discard_pile, ...this.props.played_pile]
+                        });
+                    } else {
+                        this.setState({
+                            popUpMsg : "You can play another card! Remember to draw a card for every card you play!",
+                            popUp : true
+                        });
+                    }
+                    //Update the playable cards because the next card can be anything
+                    this.props.updatePlayableCards(DECK_NUM);
+                } else {
+                    //If the player doesn't go again, move turn pointer to next player
+                    let index = this.props.player_names.indexOf(this.props.username);
+                    this.props.updateTurnAt(index === this.props.player_names.length - 1 ? this.props.player_names[0] : this.props.player_names[index + 1]);
+                }
+
+                //Update the card draw opps so the player can draw a card
+                if (this.props.hand.length < 4) {
+                    this.setState({drawCardOpps : 4 - this.props.hand.length});
+                }
+
+                //Autodraw cards for the player if auto draw is turned on
+                if (this.props.settings.autoDraw) {
+                    let numDraw = Math.min(4 - this.props.hand.length, this.props.deck);
+                    for (let i = 0; i < numDraw; i++) {
+                        setTimeout(() => {
+                            this.deckClickHandler();
+                        }, 1200 * i);
+                    }
+                }
             }
         });
     }
@@ -1142,7 +1236,7 @@ class Game extends Component {
         });
 
 
-        socket.on('player-took-center', ({username}) => {
+        socket.on('player-took-center', ({username, is_burn}) => {
             axios.get(SERVER('game/' + this.props.game_id + '/' + this.props.user_id + '/state')).then((res) => {
                 if (!res.data.found) {
                     this.displayInactivityMessage();
@@ -1161,6 +1255,11 @@ class Game extends Component {
 
                 //Display the card played message to the chat (when implemented)
                 this.props.updateMessages([...this.props.messages, {username : "", message : `${username} took from the center!`}]);
+
+                if (is_burn) {
+                    //Display the burn message to the chat
+                    this.props.updateMessages([...this.props.messages, {username : "", message : "The play pile was burned!"}]);
+                }               
             });
         });
 
@@ -1274,8 +1373,8 @@ class Game extends Component {
         return (
             <>
                 {!this.props.settings.autoDraw ? 
-                    (<Card clickable={true} clickFunct={this.deckClickHandler} float={true} blank={this.props.deck === 0} faceDown={true}/>) :
-                    (<Card float={true} blank={this.props.deck === 0} faceDown={true}/>)
+                    (<Card clickable={true} clickFunct={this.deckClickHandler} float={true} blank={this.props.deck === 0} cardBack={this.props.settings.cardDesign} faceDown={true}/>) :
+                    (<Card float={true} blank={this.props.deck === 0} cardBack={this.props.settings.cardDesign} faceDown={true}/>)
                 }
                 <p>Deck (Cards Left: {this.props.deck}) {this.props.settings.autoDraw ? "(Auto-draw is on)" : "(Click to draw)"}</p>
                 <br></br>
@@ -1351,9 +1450,9 @@ class Game extends Component {
                             <Card highlight={this.state.swapPhase} clickable={true} float={true} playCard={this.cardPlayHandler} fromUntouched={true} blank={this.props.untouched_hand[0] === -1} key={this.props.username + '-untouched0-' + this.props.untouched_hand[0] + this.state.numReset} number={this.props.untouched_hand[0]}/>
                             <Card highlight={this.state.swapPhase} clickable={true} float={true} playCard={this.cardPlayHandler} fromUntouched={true} blank={this.props.untouched_hand[1] === -1} key={this.props.username + '-untouched1-' + this.props.untouched_hand[1] + this.state.numReset} number={this.props.untouched_hand[1]}/>
                             <Card highlight={this.state.swapPhase} clickable={true} float={true} playCard={this.cardPlayHandler} fromUntouched={true} blank={this.props.untouched_hand[2] === -1} key={this.props.username + '-untouched2-' + this.props.untouched_hand[2] + this.state.numReset} number={this.props.untouched_hand[2]}/>
-                            <Card clickable={true} clickFunct={() => {this.playHiddenHandler(0)}} float={true} blank={this.props.hidden_hand[0]} faceDown={!this.props.hidden_hand[0]} key={this.props.username + '-hidden0-' + this.props.hidden_hand[0]}/>
-                            <Card clickable={true} clickFunct={() => {this.playHiddenHandler(1)}} float={true} blank={this.props.hidden_hand[1]} faceDown={!this.props.hidden_hand[1]} key={this.props.username + '-hidden1-' + this.props.hidden_hand[1]}/>
-                            <Card clickable={true} clickFunct={() => {this.playHiddenHandler(2)}} float={true} blank={this.props.hidden_hand[2]} faceDown={!this.props.hidden_hand[2]} key={this.props.username + '-hidden2-' + this.props.hidden_hand[2]}/>
+                            <Card clickable={true} clickFunct={() => {this.playHiddenHandler(0)}} float={true} blank={this.props.hidden_hand[0]} cardBack={this.props.settings.cardDesign} faceDown={!this.props.hidden_hand[0]} key={this.props.username + '-hidden0-' + this.props.hidden_hand[0]}/>
+                            <Card clickable={true} clickFunct={() => {this.playHiddenHandler(1)}} float={true} blank={this.props.hidden_hand[1]} cardBack={this.props.settings.cardDesign} faceDown={!this.props.hidden_hand[1]} key={this.props.username + '-hidden1-' + this.props.hidden_hand[1]}/>
+                            <Card clickable={true} clickFunct={() => {this.playHiddenHandler(2)}} float={true} blank={this.props.hidden_hand[2]} cardBack={this.props.settings.cardDesign} faceDown={!this.props.hidden_hand[2]} key={this.props.username + '-hidden2-' + this.props.hidden_hand[2]}/>
                         </>
                     );
                 } else {
@@ -1362,9 +1461,9 @@ class Game extends Component {
                             <Card float={true} fromUntouched={true} blank={untouched_hand[0] === -1} key={player + '-untouched-0'} number={untouched_hand[0]}/>
                             <Card float={true} fromUntouched={true} blank={untouched_hand[1] === -1} key={player + '-untouched-1'} number={untouched_hand[1]}/>
                             <Card float={true} fromUntouched={true} blank={untouched_hand[2] === -1} key={player + '-untouched-2'} number={untouched_hand[2]}/>
-                            <Card float={true} blank={hidden_hand[0]} faceDown={!hidden_hand[0]} key={player + '-hidden-0'}/>
-                            <Card float={true} blank={hidden_hand[1]} faceDown={!hidden_hand[1]} key={player + '-hidden-1'}/>
-                            <Card float={true} blank={hidden_hand[2]} faceDown={!hidden_hand[2]} key={player + '-hidden-2'}/>
+                            <Card float={true} blank={hidden_hand[0]} cardBack={this.props.settings.cardDesign} faceDown={!hidden_hand[0]} key={player + '-hidden-0'}/>
+                            <Card float={true} blank={hidden_hand[1]} cardBack={this.props.settings.cardDesign} faceDown={!hidden_hand[1]} key={player + '-hidden-1'}/>
+                            <Card float={true} blank={hidden_hand[2]} cardBack={this.props.settings.cardDesign} faceDown={!hidden_hand[2]} key={player + '-hidden-2'}/>
                         </>
                     );
                 }
