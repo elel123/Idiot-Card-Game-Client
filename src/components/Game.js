@@ -1448,7 +1448,7 @@ class Game extends Component {
                     })}
                     itemRenderer={({card, id}) => {
                         return (
-                            <div className="item" key={id}>
+                            <div className="item" key={id + " " + this.state.numReset}>
                                 <Card highlight={this.state.swapPhase} clickable={true} float={true} playCard={this.cardPlayHandler} fromUntouched={false} number={card}/>
                             </div>
                             
