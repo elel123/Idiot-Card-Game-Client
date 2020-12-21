@@ -56,7 +56,7 @@ class ChatBox extends Component {
         return (
             <>
                 <ScrollToBottom className="chat-box" mode="bottom">
-                    <div className="chat-box message-list">
+                    <div className="chat-box message-list" style={{"height" : (this.props.num_players < 4 ? "280px" : "220px")}}>
                         {messageDisplay}
                     </div>
                 </ScrollToBottom>
@@ -85,7 +85,8 @@ const mapStateToProps = (state, ownProps) => {
     return {
         username : state.username,
         game_id : state.game_id,
-        messages : state.messages
+        messages : state.messages,
+        num_players : state.player_names.length
     }
 }
 

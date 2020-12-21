@@ -321,7 +321,10 @@ class Lobby extends Component {
             });
         });
         socket.on('game-start', () => {
-            alert("game started");
+            this.setState({
+                popUp: true,
+                popUpMsg: "Game Has Started!"
+            });
             axios.get(SERVER('game/' + this.props.game_id + '/' + this.props.user_id + '/state')).then((res) => {
                 this.props.updateState({
                     players : res.data.other_players,

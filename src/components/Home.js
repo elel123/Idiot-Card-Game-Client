@@ -21,7 +21,17 @@ class Home extends Component {
         username : "",
         room : "",
         popUp : false,
-        popUpMsg : ""
+        popUpMsg : "",
+        returnFromError : false
+    }
+
+    handleRoomID = (event) => {
+        this.setState({ 
+            room : event.target.value
+        });
+        setTimeout(() => {
+            this.displayFindRoom();
+        }, 1);
     }
 
     handleUsername = (event) => {
@@ -30,34 +40,40 @@ class Home extends Component {
         });
     }
 
-    handleRoomID = (event) => {
-        this.setState({ 
-            room : event.target.value
-        });
-    }
-
-    handleFindRoom = (event) => {
-        console.log(this.props);
+    usernameCheck = () => {
         if (this.state.username.length > 30) {
             this.setState({
                 popUpMsg: "Please enter a shorter username",
                 popUp: true
             });
+            return false;
         } else if (!this.state.username.replace(/\s/g, '').length) {
             this.setState({
                 popUpMsg: "Please enter a valid username",
                 popUp: true
             });
+            return false;
         } else if (this.state.username === "" ) {
             this.setState({
                 popUpMsg: "Please enter a username",
                 popUp: true
             });
-        } else if (this.state.room === "") {
+            return false;
+        } else {
+            return true;
+        }
+    }
+
+    handleFindRoom = (event) => {
+        console.log(this.props);
+        if (this.state.room === "") {
             this.setState({
-                popUpMsg: "Please enter a valid room ID",
-                popUp: true
-            });           
+                returnFromError: "Please enter a valid room ID",
+            });   
+            setTimeout(() => {
+                this.displayFindRoom();
+            }, 5);
+            return;        
         } else {
             this.setState({
                 popUpMsg: "Finding room now...",
@@ -71,9 +87,9 @@ class Home extends Component {
                 if (!res.data.success) {
                     this.setState({
                         room: "",
-                        popUpMsg: res.data.err_msg,
-                        popUp: true
+                        returnFromError: res.data.err_msg
                     });       
+                    this.displayFindRoom();
                 } else {
                     //If room is found, save the necessary info and redirect player to game lobby
                     this.setState({
@@ -93,27 +109,7 @@ class Home extends Component {
     }
 
     handleCreateRoom = (event) => {
-        if (this.state.username.length > 30) {
-            this.setState({
-                popUpMsg: "Please enter a shorter username",
-                popUp: true
-            });
-            return;
-        }  
-        
-        if (!this.state.username.replace(/\s/g, '').length) {
-            this.setState({
-                popUpMsg: "Please enter a valid username",
-                popUp: true
-            });
-            return;
-        }
-
-        if (this.state.username === "") {
-            this.setState({
-                popUpMsg: "Please enter a username",
-                popUp: true
-            });
+        if (!this.usernameCheck()) {
             return;
         }
         this.setState({
@@ -149,8 +145,43 @@ class Home extends Component {
 
     }
 
+    displayFindRoom = () => {
+        if (!this.usernameCheck()) {
+            return;
+        } else {
+            let errMsg = this.state.returnFromError;
+            this.setState({ 
+                popUp : true, 
+                returnFromError : "",
+                popUpMsg: (
+                    <>
+                        <hr className="hidden-line"></hr>
+                        <h3 className="header">Join Room</h3>
+                        {
+                            (errMsg != "") ?
+                            (<p style={{"color" : "red"}}>{"Error: " + errMsg}</p>):
+                            (<><p>...</p></>)
+                        }
+                        
+                        <Form>
+                            <Form.Group>
+                                <Form.Label>Enter Room ID</Form.Label>
+                                <Form.Control className="input-field" onChange={this.handleRoomID} value={this.state.room}  type="text" placeholder="Room ID" />
+                            </Form.Group>
+                        </Form>
+                        <div>     
+                            <Button className="home-btn" onClick={this.handleFindRoom} variant="secondary">Join Room</Button>
+                        </div>
+                        <hr className="hidden-line"></hr>
+                    </>
+                ) 
+            });
+        }
+    }
+
     closePopUp = (event) => {
-        this.setState({ popUp : false, popUpMsg: "" });
+        this.setState({ popUp : false, popUpMsg: "" }); 
+        
     }
 
     componentDidMount() {
@@ -160,21 +191,20 @@ class Home extends Component {
     render() {
         return (
             <Container className="p-5">
+                <hr className="hidden-line"></hr>
+                <hr className="hidden-line"></hr>
                 <Jumbotron>
                 <h1 className="header">♠ ♥ Play Idiot ♣ ♦</h1>
                 <Form>
-                    <Form.Group>
-                        <Form.Label>Enter Room ID (for joining a room)</Form.Label>
-                        <Form.Control className="input-field" onChange={this.handleRoomID} value={this.state.room}  type="text" placeholder="Room ID" />
-                    </Form.Group>
 
                     <Form.Group>
-                        <Form.Label>Username</Form.Label>
+                        <Form.Label>Enter Your Username</Form.Label>
                         <Form.Control className="input-field" onChange={this.handleUsername} value={this.state.username} type="text" placeholder="Username" />
                     </Form.Group>
                 </Form>
+                <hr className="hidden-line"></hr>
                 <div>     
-                    <Button className="home-btn" onClick={this.handleFindRoom} variant="secondary">Find Room</Button>
+                    <Button className="home-btn" onClick={this.displayFindRoom} variant="secondary">Join Room</Button>
                     <Button className="home-btn" onClick={this.handleCreateRoom} variant="secondary">Create Room</Button>
                 </div>
                 </Jumbotron>
@@ -184,7 +214,7 @@ class Home extends Component {
                 <hr className="hidden-line"></hr>
                 <hr className="hidden-line"></hr>
                 {/* <Card float={true} blank={this.props.hidden_hand[0]} cardBack={"Idiot"} faceDown={true}/> */}
-                <p>(Version 2020.10.4)</p>
+                <p>(Version 2020.12.21)</p>
 
                 <Popup open={this.state.popUp} onClose={this.closePopUp} modal closeOnDocumentClick>
                     <div>{this.state.popUpMsg}</div>

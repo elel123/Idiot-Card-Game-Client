@@ -8,6 +8,7 @@ import { Card } from './Card/Card';
 import { DECK_NUM } from '../constants/constants';
 import ChatBox from './ChatBox/ChatBox';
 import { calcCard } from '../utils/calcCard';
+import RLDD from 'react-list-drag-and-drop/lib/RLDD';
 
 import {
     Container, 
@@ -513,14 +514,11 @@ class Game extends Component {
                     }
                 } else {
                     axios.get(SERVER('game/' + this.props.game_id + '/' + this.props.user_id + '/state')).then((subRes) => {
-                        this.props.updateState({
+                        this.props.updateGame({
                             players : subRes.data.other_players,
                             deck : subRes.data.draw_deck_size,
                             played_pile : subRes.data.played_pile,
                             discard_pile : subRes.data.discard_pile,
-                            hand : subRes.data.hand,
-                            untouched_hand : subRes.data.untouched_hand,
-                            hidden_hand : subRes.data.hidden_hand,
                             playable_cards : subRes.data.playable_cards,
                             turn_at : subRes.data.turn_at
                         });
@@ -1005,6 +1003,18 @@ class Game extends Component {
         
     }
 
+    handleRLDDChange = (newHand) => {
+        // this.setState({cards : newItems});
+        this.props.updateHand(newHand.map(({card}) => card));
+    }
+
+    sortHand = () => {
+        let hand = [...this.props.hand];
+        //Sorting hand to be numerical order (and K and A at the end)
+        hand.sort((a, b) => ((a%13==0||a%13==1)?((a%13)+13):a%13) - ((b%13==0||b%13==1)?((b%13)+13):b%13));
+        this.props.updateHand(hand);
+    }
+
     //MESSAGE DISPLAYERS
 
     displayInactivityMessage = () => {
@@ -1074,11 +1084,11 @@ class Game extends Component {
                             For the effects of the power cards: <br></br>
                             <ul>
                                 <li><b>2</b> - allows you to go again</li>
-                                <li><b>3</b> - mirrors the card that's below it (but doesn't mirror a 2)</li>
+                                <li><b>3</b> - mirrors the card that's below it (but doesn't mirror the effects a 2)</li>
                                 <li><b>7</b> - forces the next player to play a card that is below 7 (power cards, or 4, 5, 6)</li>
                                 <li><b>10</b> - burns the play pile (moves everything to the discard)</li>
-                                <li>A <b>four-of-kind</b> on the play pile will also be a burn (this includes using 3 as mirrors)</li>
-                                <li>Note that playing a card that burns will allow you to go again.</li>
+                                <li>A <b>four-of-kind</b> on the play pile will also burn the play pile (this includes using 3 as mirrors)</li>
+                                <li>Note that playing a card that burns will allow you to play again.</li>
                             </ul>
                             
                             
@@ -1095,8 +1105,10 @@ class Game extends Component {
                     </Row>
                     <Row><Col><div className="center-div"><b>Warning</b></div></Col></Row>
                     <Row>
-                        This game is being timed for inactivity and could possibly delete itself if it's left
-                        idle for too long. Note that typing in the chat does not count as activity.
+                        <div className="left-div">
+                            This game is being timed for inactivity and could possibly delete itself if it's left
+                            idle for too long. Note that typing in the chat does not count as activity.
+                        </div>
                     </Row>
                 </Container>
             ),
@@ -1122,19 +1134,17 @@ class Game extends Component {
     }
 
     componentDidMount() {
+
         if (this.props.game_id) {
             axios.get(SERVER('game/' + this.props.game_id + '/' + this.props.user_id + '/state')).then((res) => {
                     if (!res.data.found) {
                         this.displayInactivityMessage();
                     }
-                    this.props.updateState({
+                    this.props.updateGame({
                         players : res.data.other_players,
                         deck : res.data.draw_deck_size,
                         played_pile : res.data.played_pile,
                         discard_pile : res.data.discard_pile,
-                        hand : res.data.hand,
-                        untouched_hand : res.data.untouched_hand,
-                        hidden_hand : res.data.hidden_hand,
                         playable_cards : res.data.playable_cards,
                         turn_at : res.data.turn_at
                     });
@@ -1155,18 +1165,14 @@ class Game extends Component {
                 if (!res.data.found) {
                     this.displayInactivityMessage();
                 }
-                this.props.updateState({
+                this.props.updateGame({
                     players : res.data.other_players,
                     deck : res.data.draw_deck_size,
                     played_pile : res.data.played_pile,
                     discard_pile : res.data.discard_pile,
-                    hand : res.data.hand,
-                    untouched_hand : res.data.untouched_hand,
-                    hidden_hand : res.data.hidden_hand,
                     playable_cards : res.data.playable_cards,
                     turn_at : res.data.turn_at
                 });
-
             });
         });
 
@@ -1175,14 +1181,11 @@ class Game extends Component {
                 if (!res.data.found) {
                     this.displayInactivityMessage();
                 }
-                this.props.updateState({
+                this.props.updateGame({
                     players : res.data.other_players,
                     deck : res.data.draw_deck_size,
                     played_pile : res.data.played_pile,
                     discard_pile : res.data.discard_pile,
-                    hand : res.data.hand,
-                    untouched_hand : res.data.untouched_hand,
-                    hidden_hand : res.data.hidden_hand,
                     playable_cards : res.data.playable_cards,
                     turn_at : res.data.turn_at
                 });
@@ -1204,14 +1207,11 @@ class Game extends Component {
                 if (!res.data.found) {
                     this.displayInactivityMessage();
                 }
-                this.props.updateState({
+                this.props.updateGame({
                     players : res.data.other_players,
                     deck : res.data.draw_deck_size,
                     played_pile : res.data.played_pile,
                     discard_pile : res.data.discard_pile,
-                    hand : res.data.hand,
-                    untouched_hand : res.data.untouched_hand,
-                    hidden_hand : res.data.hidden_hand,
                     playable_cards : res.data.playable_cards,
                     turn_at : res.data.turn_at
                 });
@@ -1241,14 +1241,11 @@ class Game extends Component {
                 if (!res.data.found) {
                     this.displayInactivityMessage();
                 }
-                this.props.updateState({
+                this.props.updateGame({
                     players : res.data.other_players,
                     deck : res.data.draw_deck_size,
                     played_pile : res.data.played_pile,
                     discard_pile : res.data.discard_pile,
-                    hand : res.data.hand,
-                    untouched_hand : res.data.untouched_hand,
-                    hidden_hand : res.data.hidden_hand,
                     playable_cards : res.data.playable_cards,
                     turn_at : res.data.turn_at
                 });
@@ -1268,14 +1265,11 @@ class Game extends Component {
                 if (!res.data.found) {
                     this.displayInactivityMessage();
                 }
-                this.props.updateState({
+                this.props.updateGame({
                     players : res.data.other_players,
                     deck : res.data.draw_deck_size,
                     played_pile : res.data.played_pile,
                     discard_pile : res.data.discard_pile,
-                    hand : res.data.hand,
-                    untouched_hand : res.data.untouched_hand,
-                    hidden_hand : res.data.hidden_hand,
                     playable_cards : res.data.playable_cards,
                     turn_at : res.data.turn_at
                 });
@@ -1288,14 +1282,11 @@ class Game extends Component {
                 if (!res.data.found) {
                     this.displayInactivityMessage();
                 }
-                this.props.updateState({
+                this.props.updateGame({
                     players : res.data.other_players,
                     deck : res.data.draw_deck_size,
                     played_pile : res.data.played_pile,
                     discard_pile : res.data.discard_pile,
-                    hand : res.data.hand,
-                    untouched_hand : res.data.untouched_hand,
-                    hidden_hand : res.data.hidden_hand,
                     playable_cards : res.data.playable_cards,
                     turn_at : res.data.turn_at
                 });
@@ -1361,7 +1352,7 @@ class Game extends Component {
         } 
         return (
             <>
-                <p className="player-names"><b>{turnPointer + name} - Cards In Hand: {numCards}  {swapped && !this.state.everyoneSwapped ? '- Ready' : null}</b></p>
+                <p className="player-names"><b>{turnPointer + name} {swapped && !this.state.everyoneSwapped ? '✅' : null}<br />Cards In Hand: {numCards} </b></p>
                 {cardDisplay}
             </>
         );
@@ -1424,12 +1415,59 @@ class Game extends Component {
                     null
                 }
                 {
-                    !this.state.swapPhase && this.props.settings.playMult?
+                    !this.state.swapPhase && this.props.settings.playMult ?
                     (<Button className="swap-btn" onClick={this.multipleCardPlayHandler} variant="secondary">Play Multiple</Button>):
+                    null
+                }
+                {
+                    !this.state.swapPhase ?
+                    (<Button className="swap-btn" onClick={this.sortHand} variant="secondary">Sort Hand</Button>):
                     null
                 }
             </>
         )
+    }
+
+    formatPlayerHandDisplay = () => {
+        let len = this.props.hand.length;
+        const handStyle = {
+            "position": "absolute",
+            "zIndex": "99",
+            "marginLeft": (486 - len * 27) + "px",
+            "marginRight": "100px"
+        }
+        return (
+            <div style={handStyle}>
+                <RLDD
+                    // cssClasses="hand"
+                    items={this.props.hand.map((card) => {
+                        return {
+                            "id" : card,
+                            "card" : card
+                        }
+                    })}
+                    itemRenderer={({card, id}) => {
+                        return (
+                            <div className="item" key={id}>
+                                <Card highlight={this.state.swapPhase} clickable={true} float={true} playCard={this.cardPlayHandler} fromUntouched={false} number={card}/>
+                            </div>
+                            
+                        );
+                    }}
+                    onChange={this.handleRLDDChange}
+                    layout="horizontal"
+                />
+            </div>
+        )
+        
+    }
+
+    formatPlayerDisplayLong = () => {
+        let hand = this.props.hand.map((card) => {
+            return (<Card highlight={this.state.swapPhase} clickable={true} float={true} playCard={this.cardPlayHandler} fromUntouched={false} key={card + " " + this.state.numReset} number={card}/>)
+        });
+
+        return hand;
     }
 
     render() {
@@ -1437,7 +1475,8 @@ class Game extends Component {
         let playerNumCards;
         let playerSwapped;
         let playerCards;
-        let hand;
+
+
         if (this.props.user_id !== "") {
             //Set up the display variables 
             playerNames = this.props.player_names;
@@ -1478,9 +1517,9 @@ class Game extends Component {
             }
 
 
-            hand = this.props.hand.map((card) => {
-                return (<Card highlight={this.state.swapPhase} clickable={true} float={true} playCard={this.cardPlayHandler} fromUntouched={false} key={card + " " + this.state.numReset} number={card}/>)
-            });
+            // hand = this.props.hand.map((card) => {
+            //     return (<Card highlight={this.state.swapPhase} clickable={true} float={true} playCard={this.cardPlayHandler} fromUntouched={false} key={card + " " + this.state.numReset} number={card}/>)
+            // });
 
             playerNames = [
                 ...(playerNames.slice(playerIndex, playerNames.length)),
@@ -1520,7 +1559,6 @@ class Game extends Component {
                         </Row>
                         <Row><hr></hr></Row>
                         <Row><hr></hr></Row>
-                        <Row><hr></hr></Row>
                         <Row>
                             <Col>
                                 <hr className="hidden-line"></hr>
@@ -1528,17 +1566,25 @@ class Game extends Component {
                                 <hr className="hidden-line"></hr>
                                 <hr className="hidden-line"></hr>
                                 <hr className="hidden-line"></hr>
+                                <hr className="hidden-line"></hr>
+                                <hr className="hidden-line"></hr>
+                                <hr className="hidden-line"></hr>
+                                <hr className="hidden-line"></hr>
                                 {this.formatCardSideButtonDisplays()}
+                                <hr className="hidden-line"></hr>
+                                <hr className="hidden-line"></hr>
+                                {this.props.hand.length <= 18 ? this.formatPlayerHandDisplay() : null}
                             </Col>
                             <Col>
+                                <hr className="hidden-line"></hr>
                                 {this.formatCenterDisplay()}
+                                <hr className="hidden-line"></hr>
                                 {this.formatPlayerDisplay(playerNames[0], playerCards[0])}
                                 <hr className="hidden-line"></hr>
                                 <hr className="hidden-line"></hr>
-                                {hand}
+                                {this.props.hand.length > 18 ? this.formatPlayerDisplayLong() : null}
                             </Col>
                             <Col>
-                                <hr className="hidden-line"></hr>
                                 <hr className="hidden-line"></hr>
                                 <hr className="hidden-line"></hr>
                                 {this.formatChatBoxDisplay()}
@@ -1567,22 +1613,26 @@ class Game extends Component {
                         </Row>
                         <Row><hr></hr></Row>
                         <Row><hr></hr></Row>
-                        <Row><hr></hr></Row>
                         <Row>
                             <Col>
+                                <hr className="hidden-line"></hr>
                                 {this.formatPlayerDisplay(playerNames[1], playerCards[1], playerNumCards[1], playerSwapped[1])}
                                 <hr className="hidden-line"></hr>
                                 {this.formatCardSideButtonDisplays()}
+                                <hr className="hidden-line"></hr>
+                                <hr className="hidden-line"></hr>
+                                {this.props.hand.length <= 18 ? this.formatPlayerHandDisplay() : null}
                             </Col>
                             <Col>
+                                <hr className="hidden-line"></hr>
                                 {this.formatCenterDisplay()}
+                                <hr className="hidden-line"></hr>
                                 {this.formatPlayerDisplay(playerNames[0], playerCards[0])}
                                 <hr className="hidden-line"></hr>
                                 <hr className="hidden-line"></hr>
-                                {hand}
+                                {this.props.hand.length > 18 ? this.formatPlayerDisplayLong() : null}
                             </Col>
                             <Col>
-                                <hr className="hidden-line"></hr>
                                 <hr className="hidden-line"></hr>
                                 <hr className="hidden-line"></hr>
                                 {this.formatChatBoxDisplay()}
@@ -1611,19 +1661,25 @@ class Game extends Component {
                         </Row>
                         <Row><hr></hr></Row>
                         <Row><hr></hr></Row>
-                        <Row><hr></hr></Row>
                         <Row>
                             <Col>
                                 {this.formatPlayerDisplay(playerNames[1], playerCards[1], playerNumCards[1], playerSwapped[1])}
                                 <hr className="hidden-line"></hr>
+                                <hr className="hidden-line"></hr>
+                                <hr className="hidden-line"></hr>
                                 {this.formatCardSideButtonDisplays()}
+                                <hr className="hidden-line"></hr>
+                                <hr className="hidden-line"></hr>
+                                {this.props.hand.length <= 18 ? this.formatPlayerHandDisplay() : null}
                             </Col>
                             <Col>
+                                <hr className="hidden-line"></hr>
                                 {this.formatCenterDisplay()}
+                                <hr className="hidden-line"></hr>
                                 {this.formatPlayerDisplay(playerNames[0], playerCards[0])}
                                 <hr className="hidden-line"></hr>
                                 <hr className="hidden-line"></hr>
-                                {hand}
+                                {this.props.hand.length > 18 ? this.formatPlayerDisplayLong() : null}
                             </Col>
                             <Col>
                                 {this.formatPlayerDisplay(playerNames[3], playerCards[3], playerNumCards[3], playerSwapped[3])}
@@ -1631,13 +1687,11 @@ class Game extends Component {
                                 {this.formatChatBoxDisplay()}
                             </Col>
                         </Row>
-                        <Row>
-                            <hr></hr>
-                        </Row>
                     </Container>
                 </Container>
             )
         } else {
+            
             return (
                 <>
                     <hr className="hidden-line"></hr>
@@ -1648,7 +1702,10 @@ class Game extends Component {
                         <Row><hr></hr></Row>
                         <Row><Col><div className="center-div"><Button className="take-center-btn" onClick={this.returnHomeHandler} variant="secondary">Return Home</Button></div></Col></Row>
                     </Container>
+                    
                 </>
+
+                
             )
         }
 
@@ -1684,6 +1741,7 @@ const mapStateToProps = (state, ownProps) => {
 const mapDispatchToProps = (dispatch) => {
     return {
         updateState: (gameState) => {dispatch({type: 'UPDATE_STATE', gameState: gameState})},
+        updateGame: (gameState) => {dispatch({type: 'UPDATE_GAME', gameState: gameState})},
         updateGameID: (game_id) => {dispatch({type: 'UPDATE_GAME_ID', game_id: game_id})},
         updateUsername: (username) => {dispatch({type: 'UPDATE_USERNAME', username: username})},
         updatePlayerNames: (player_names) => {dispatch({type: 'UPDATE_PLAYER_NAMES', player_names: player_names})},

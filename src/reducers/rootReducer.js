@@ -34,6 +34,18 @@ const rootReducer = (state = initState, action) => {
             playable_cards : action.gameState.playable_cards,
             turn_at : action.gameState.turn_at
         }
+    } else if  (action.type === 'UPDATE_GAME') {
+        return {
+            ...state,
+            players : action.gameState.players,
+            player_swapped : action.gameState.players.map(({swapped}) => {return swapped}),
+            player_num_cards : action.gameState.players.map(({num_hand_cards}) => {return num_hand_cards}),
+            deck : action.gameState.deck,
+            played_pile : action.gameState.played_pile,
+            discard_pile : action.gameState.discard_pile,
+            playable_cards : action.gameState.playable_cards,
+            turn_at : action.gameState.turn_at
+        }
     } else if (action.type === 'UPDATE_MESSAGES') {
         return {
             ...state,
