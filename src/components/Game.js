@@ -808,7 +808,7 @@ class Game extends Component {
 
     takeFromCenterHandlerHelper = (cards) => {
 
-        if (cards.length == 0) {
+        if (cards.length === 0) {
             return;
         }
 
@@ -1011,7 +1011,7 @@ class Game extends Component {
     sortHand = () => {
         let hand = [...this.props.hand];
         //Sorting hand to be numerical order (and K and A at the end)
-        hand.sort((a, b) => ((a%13==0||a%13==1)?((a%13)+13):a%13) - ((b%13==0||b%13==1)?((b%13)+13):b%13));
+        hand.sort((a, b) => ((a%13===0||a%13===1)?((a%13)+13):a%13) - ((b%13===0||b%13===1)?((b%13)+13):b%13));
         this.props.updateHand(hand);
     }
 
