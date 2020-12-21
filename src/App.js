@@ -3,17 +3,11 @@ import {Route, BrowserRouter, Switch} from 'react-router-dom';
 import Home from './components/Home';
 import Lobby from './components/Lobby';
 import Game from './components/Game';
-import ReactGA from 'react-ga';
+// import ReactGA from 'react-ga';
 
 
 
 function App() {
-
-    useEffect(() => {
-        ReactGA.initialize('G-VW4EDEPNS7');
-        console.log("welcome");
-        ReactGA.pageview(window.location.pathname + window.location.search);
-    }, []);
 
     return (
         <BrowserRouter>
