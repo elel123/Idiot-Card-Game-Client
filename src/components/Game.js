@@ -9,6 +9,7 @@ import { DECK_NUM } from '../constants/constants';
 import ChatBox from './ChatBox/ChatBox';
 import { calcCard } from '../utils/calcCard';
 import RLDD from 'react-list-drag-and-drop/lib/RLDD';
+import Sound from 'react-sound';
 
 import {
     Container, 
@@ -42,6 +43,10 @@ class Game extends Component {
         newGameID : "",
         waitingForNewGame : false,
 
+        //State to play notif sound
+        playSound : false,
+        muted : false,
+
         showHiddenCardMsg : false,
         popUp : false,
         popUpMsg : ""
@@ -53,6 +58,7 @@ class Game extends Component {
 
     cardPlayHandler = (card, fromUntouched) => {
         console.log(card, fromUntouched);
+        this.setState({playSound : false}); //off bc of activity
         if (this.state.gameEnded) {
             this.displayGameEndedMessage();
             return;
@@ -212,6 +218,7 @@ class Game extends Component {
     }
 
     multipleCardPlayHandler = () => {
+        this.setState({playSound : false}); //off bc of activity
         if (this.state.gameEnded) {
             this.displayGameEndedMessage();
         } else if (!this.state.everyoneSwapped) {
@@ -547,6 +554,7 @@ class Game extends Component {
     }
 
     playHiddenHandler = (cardPosition) => {
+        this.setState({playSound : false}); //off bc of activity
         //Prevent the player from playing another card after having played a hidden card.
         if (this.state.haveToTakeCenter) {
             this.setState({
@@ -699,6 +707,7 @@ class Game extends Component {
     }
 
     playPileClickHandler = () => {
+        this.setState({playSound : false}); //off bc of activity
         let playedCards = this.props.played_pile.map((card) => {
             return (
                 <Card float={true} key={card} number={card}/>
@@ -717,6 +726,7 @@ class Game extends Component {
     }
 
     discardPileClickHandler = () => {
+        this.setState({playSound : false}); //off bc of activity
         if (this.props.settings.showDiscard) {
             let discardedCards = this.props.discard_pile.map((card) => {
                 return (
@@ -736,6 +746,7 @@ class Game extends Component {
     }
 
     takeFromCenterHandler = () => {
+        this.setState({playSound : false}); //off bc of activity
         if (this.state.gameEnded) {
             this.displayGameEndedMessage();
         } else if (!this.state.everyoneSwapped) {
@@ -1009,6 +1020,7 @@ class Game extends Component {
     }
 
     sortHand = () => {
+        this.setState({playSound : false}); //off bc of activity
         let hand = [...this.props.hand];
         //Sorting hand to be numerical order (and K and A at the end)
         hand.sort((a, b) => ((a%13===0||a%13===1)?((a%13)+13):a%13) - ((b%13===0||b%13===1)?((b%13)+13):b%13));
@@ -1071,6 +1083,7 @@ class Game extends Component {
     }
 
     displayHelpMessage = () => {
+        this.setState({playSound : false}); //off bc of activity
         this.setState({
             popUpMsg : (
                 <Container>
@@ -1190,6 +1203,8 @@ class Game extends Component {
                     turn_at : res.data.turn_at
                 });
 
+                this.makeBeepSound();
+
                 this.props.updateMessages([...this.props.messages, {username : "", message : username + " has locked in their swaps!"}]);
 
                 if (this.props.player_swapped.indexOf(false) === -1) {
@@ -1215,6 +1230,11 @@ class Game extends Component {
                     playable_cards : res.data.playable_cards,
                     turn_at : res.data.turn_at
                 });
+
+                //Make notification sound to signal it's the user's turn
+                if (this.props.turn_at === this.props.username) {
+                    this.makeBeepSound();
+                }
 
                 //Display the card played message to the chat (when implemented)
                 if (playable) {
@@ -1249,6 +1269,11 @@ class Game extends Component {
                     playable_cards : res.data.playable_cards,
                     turn_at : res.data.turn_at
                 });
+
+                //Make notification sound to signal it's the user's turn
+                if (this.props.turn_at === this.props.username) {
+                    this.makeBeepSound();
+                }
 
                 //Display the card played message to the chat (when implemented)
                 this.props.updateMessages([...this.props.messages, {username : "", message : `${username} took from the center!`}]);
@@ -1290,6 +1315,11 @@ class Game extends Component {
                     playable_cards : res.data.playable_cards,
                     turn_at : res.data.turn_at
                 });
+
+                //Make notification sound to signal it's the user's turn
+                if (this.props.turn_at === this.props.username) {
+                    this.makeBeepSound();
+                }
 
                 for (let card of cards) {
                     this.props.updateMessages([...this.props.messages, {username : "", message : username + " played a " + calcCard(card) + "!"}]);
@@ -1390,6 +1420,7 @@ class Game extends Component {
             <>
                 <Button className="help-btn" onClick={this.displayHelpMessage} variant="secondary">Help</Button>
                 <Button className="help-btn" onClick={this.displayWarningLeaveMessage} variant="secondary">Leave Game</Button>
+                {!this.state.gameEnded ? (<Button className="help-btn" onClick={this.toggleSound} variant="secondary">{this.state.muted ? "🔇" : "🔊"}</Button>) : null}
                 {this.state.gameEnded ? (<Button className="help-btn" onClick={this.playAgainHandler} variant="secondary">Play Again</Button>) : null}
             </>
         );
@@ -1470,6 +1501,36 @@ class Game extends Component {
         return hand;
     }
 
+    // SOUND HANDLERS
+    toggleSound = () => {
+        this.setState({ muted : !this.state.muted });
+    }
+
+    handleSoundPlaying = () => {
+        if (!this.state.gameEnded && !this.state.swapPhase && this.props.turn_at !== this.props.username) {
+            this.setState({playSound : false});
+        }
+    }
+
+    formatSound = () => {
+        return (
+            <Sound
+                url={(this.state.swapPhase) ? "meep-short.wav" : "meep-long.wav"}
+                playStatus={(this.state.playSound) ? Sound.status.PLAYING : Sound.status.STOPPED}
+                playFromPosition={0 /* in milliseconds */}
+                // onLoading={this.handleSongLoading}
+                onPlaying={this.handleSoundPlaying} 
+                onFinishedPlaying={() => {this.setState({playSound : false})}}
+            />
+        )
+    }
+ 
+    makeBeepSound = () => {
+        if (!this.state.muted) {
+            this.setState({playSound : true});
+        }
+    }
+
     render() {
         let playerNames;
         let playerNumCards;
@@ -1544,57 +1605,60 @@ class Game extends Component {
 
         if (this.props.players.length === 2) {
             return (
-                <Container className="p-3">
-                    <Popup open={this.state.popUp} onClose={this.closePopUp} modal closeOnDocumentClick>
-                        <div>{this.state.popUpMsg}</div>
-                    </Popup>
-                    <Container>
-                        <Row><hr></hr></Row>
-                        <Row>
-                            <Col></Col>
-                            <Col>
-                                {this.formatPlayerDisplay(playerNames[1], playerCards[1], playerNumCards[1], playerSwapped[1])}
-                            </Col>
-                            <Col>{this.formatTopButtonDisplays()}</Col>
-                        </Row>
-                        <Row><hr></hr></Row>
-                        <Row><hr></hr></Row>
-                        <Row>
-                            <Col>
-                                <hr className="hidden-line"></hr>
-                                <hr className="hidden-line"></hr>
-                                <hr className="hidden-line"></hr>
-                                <hr className="hidden-line"></hr>
-                                <hr className="hidden-line"></hr>
-                                <hr className="hidden-line"></hr>
-                                <hr className="hidden-line"></hr>
-                                <hr className="hidden-line"></hr>
-                                <hr className="hidden-line"></hr>
-                                {this.formatCardSideButtonDisplays()}
-                                <hr className="hidden-line"></hr>
-                                <hr className="hidden-line"></hr>
-                                {this.props.hand.length <= 18 ? this.formatPlayerHandDisplay() : null}
-                            </Col>
-                            <Col>
-                                <hr className="hidden-line"></hr>
-                                {this.formatCenterDisplay()}
-                                <hr className="hidden-line"></hr>
-                                {this.formatPlayerDisplay(playerNames[0], playerCards[0])}
-                                <hr className="hidden-line"></hr>
-                                <hr className="hidden-line"></hr>
-                                {this.props.hand.length > 18 ? this.formatPlayerDisplayLong() : null}
-                            </Col>
-                            <Col>
-                                <hr className="hidden-line"></hr>
-                                <hr className="hidden-line"></hr>
-                                {this.formatChatBoxDisplay()}
-                            </Col>
-                        </Row>
-                        <Row>
-                            <hr></hr>
-                        </Row>
+                <>
+                    {this.formatSound()}
+                    <Container className="p-3">
+                        <Popup open={this.state.popUp} onClose={this.closePopUp} modal closeOnDocumentClick>
+                            <div>{this.state.popUpMsg}</div>
+                        </Popup>
+                        <Container>
+                            <Row><hr></hr></Row>
+                            <Row>
+                                <Col></Col>
+                                <Col>
+                                    {this.formatPlayerDisplay(playerNames[1], playerCards[1], playerNumCards[1], playerSwapped[1])}
+                                </Col>
+                                <Col>{this.formatTopButtonDisplays()}</Col>
+                            </Row>
+                            <Row><hr></hr></Row>
+                            <Row><hr></hr></Row>
+                            <Row>
+                                <Col>
+                                    <hr className="hidden-line"></hr>
+                                    <hr className="hidden-line"></hr>
+                                    <hr className="hidden-line"></hr>
+                                    <hr className="hidden-line"></hr>
+                                    <hr className="hidden-line"></hr>
+                                    <hr className="hidden-line"></hr>
+                                    <hr className="hidden-line"></hr>
+                                    <hr className="hidden-line"></hr>
+                                    <hr className="hidden-line"></hr>
+                                    {this.formatCardSideButtonDisplays()}
+                                    <hr className="hidden-line"></hr>
+                                    <hr className="hidden-line"></hr>
+                                    {this.props.hand.length <= 18 ? this.formatPlayerHandDisplay() : null}
+                                </Col>
+                                <Col>
+                                    <hr className="hidden-line"></hr>
+                                    {this.formatCenterDisplay()}
+                                    <hr className="hidden-line"></hr>
+                                    {this.formatPlayerDisplay(playerNames[0], playerCards[0])}
+                                    <hr className="hidden-line"></hr>
+                                    <hr className="hidden-line"></hr>
+                                    {this.props.hand.length > 18 ? this.formatPlayerDisplayLong() : null}
+                                </Col>
+                                <Col>
+                                    <hr className="hidden-line"></hr>
+                                    <hr className="hidden-line"></hr>
+                                    {this.formatChatBoxDisplay()}
+                                </Col>
+                            </Row>
+                            <Row>
+                                <hr></hr>
+                            </Row>
+                        </Container>
                     </Container>
-                </Container>
+                </>
             )
         } else if (this.props.players.length === 3) {
             return (

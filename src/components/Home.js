@@ -14,7 +14,7 @@ import {
 
 
 
-import '../App.css';
+import '../App.css'; 
 
 class Home extends Component {
     state = {
@@ -22,7 +22,8 @@ class Home extends Component {
         room : "",
         popUp : false,
         popUpMsg : "",
-        returnFromError : false
+        returnFromError : false,
+        playSound : false
     }
 
     handleRoomID = (event) => {
@@ -147,6 +148,7 @@ class Home extends Component {
 
     displayFindRoom = () => {
         if (!this.usernameCheck()) {
+            this.makeBeepSound();
             return;
         } else {
             let errMsg = this.state.returnFromError;
@@ -179,6 +181,7 @@ class Home extends Component {
         }
     }
 
+
     closePopUp = (event) => {
         this.setState({ popUp : false, popUpMsg: "" }); 
         
@@ -190,36 +193,38 @@ class Home extends Component {
 
     render() {
         return (
-            <Container className="p-5">
-                <hr className="hidden-line"></hr>
-                <hr className="hidden-line"></hr>
-                <Jumbotron>
-                <h1 className="header">♠ ♥ Play Idiot ♣ ♦</h1>
-                <Form>
+            <>
+                <Container className="p-5">
+                    <hr className="hidden-line"></hr>
+                    <hr className="hidden-line"></hr>
+                    <Jumbotron>
+                    <h1 className="header">♠ ♥ Play Idiot ♣ ♦</h1>
+                    <Form>
 
-                    <Form.Group>
-                        <Form.Label>Enter Your Username</Form.Label>
-                        <Form.Control className="input-field" onChange={this.handleUsername} value={this.state.username} type="text" placeholder="Username" />
-                    </Form.Group>
-                </Form>
-                <hr className="hidden-line"></hr>
-                <div>     
-                    <Button className="home-btn" onClick={this.displayFindRoom} variant="secondary">Join Room</Button>
-                    <Button className="home-btn" onClick={this.handleCreateRoom} variant="secondary">Create Room</Button>
-                </div>
-                </Jumbotron>
-                <hr className="hidden-line"></hr>
-                <hr className="hidden-line"></hr>
-                <hr className="hidden-line"></hr>
-                <hr className="hidden-line"></hr>
-                <hr className="hidden-line"></hr>
-                {/* <Card float={true} blank={this.props.hidden_hand[0]} cardBack={"Idiot"} faceDown={true}/> */}
-                <p>(Version 2020.12.21)</p>
+                        <Form.Group>
+                            <Form.Label>Enter Your Username</Form.Label>
+                            <Form.Control className="input-field" onChange={this.handleUsername} value={this.state.username} type="text" placeholder="Username" />
+                        </Form.Group>
+                    </Form>
+                    <hr className="hidden-line"></hr>
+                    <div>     
+                        <Button className="home-btn" onClick={this.displayFindRoom} variant="secondary">Join Room</Button>
+                        <Button className="home-btn" onClick={this.handleCreateRoom} variant="secondary">Create Room</Button>
+                    </div>
+                    </Jumbotron>
+                    <hr className="hidden-line"></hr>
+                    <hr className="hidden-line"></hr>
+                    <hr className="hidden-line"></hr>
+                    <hr className="hidden-line"></hr>
+                    <hr className="hidden-line"></hr>
+                    {/* <Card float={true} blank={this.props.hidden_hand[0]} cardBack={"Idiot"} faceDown={true}/> */}
+                    <p>(Version 2020.12.21)</p>
 
-                <Popup open={this.state.popUp} onClose={this.closePopUp} modal closeOnDocumentClick>
-                    <div>{this.state.popUpMsg}</div>
-                </Popup>
-            </Container>
+                    <Popup open={this.state.popUp} onClose={this.closePopUp} modal closeOnDocumentClick>
+                        <div>{this.state.popUpMsg}</div>
+                    </Popup>
+                </Container>
+            </>
         )
     }
 } 
