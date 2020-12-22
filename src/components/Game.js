@@ -472,6 +472,7 @@ class Game extends Component {
                 popUpMsg : "You must choose the same number of face up cards in your hand and on the game board to swap.",
                 popUp : true
             });
+            this.resetSwapSelectionHandler();
         } else {
             axios.put(SERVER('game/' + this.props.game_id + '/swap'), {
                 user_id : this.props.user_id,
@@ -1027,6 +1028,54 @@ class Game extends Component {
         this.props.updateHand(hand);
     }
 
+    sortNewHand = (newHand) => {
+        let hand = [...newHand];
+        //Sorting hand to be numerical order (and K and A at the end)
+        hand.sort((a, b) => ((a%13===0||a%13===1)?((a%13)+13):a%13) - ((b%13===0||b%13===1)?((b%13)+13):b%13));
+        this.props.updateHand(hand);
+    }
+
+    checkHandConsistency = (serverHand) => {
+        //Check if the current hand is consistent with the server's
+
+        let handSet = new Set();
+        let consistent = true;
+        for (let num of this.props.hand) {
+            handSet.add(num);
+
+            if (!serverHand.includes(num)) {
+                consistent = false;
+                break;
+            }
+        }
+
+        //If the hand and server hand is inconsistent with lengths
+        if (!consistent || serverHand.length !== handSet.size || handSet.size !== this.props.hand.length) {
+            this.setState({
+                popUpMsg: "The server detected discrepancies with your cards. Updating hand...",
+                popUp: true
+            });
+            this.props.sortNewHand(serverHand);
+
+            //Update the card draw opps so the player can draw a card
+            if (serverHand.length < 4) {
+                this.setState({drawCardOpps : 4 - serverHand.length});
+            }
+
+            //Autodraw cards for the player if auto draw is turned on
+            if (this.props.settings.autoDraw) {
+                let numDraw = Math.min(4 - serverHand.length, this.props.deck);
+                for (let i = 0; i < numDraw; i++) {
+                    setTimeout(() => {
+                        this.deckClickHandler();
+                    }, 1000 * i);
+                }
+            }
+        }
+
+        console.log("hand is consistent");
+    }
+
     //MESSAGE DISPLAYERS
 
     displayInactivityMessage = () => {
@@ -1097,7 +1146,7 @@ class Game extends Component {
                             For the effects of the power cards: <br></br>
                             <ul>
                                 <li><b>2</b> - allows you to go again</li>
-                                <li><b>3</b> - mirrors the card that's below it (but doesn't mirror the effects a 2)</li>
+                                <li><b>3</b> - mirrors the card that's below it (but doesn't mirror the effects of a 2)</li>
                                 <li><b>7</b> - forces the next player to play a card that is below 7 (power cards, or 4, 5, 6)</li>
                                 <li><b>10</b> - burns the play pile (moves everything to the discard)</li>
                                 <li>A <b>four-of-kind</b> on the play pile will also burn the play pile (this includes using 3 as mirrors)</li>
@@ -1231,6 +1280,9 @@ class Game extends Component {
                     turn_at : res.data.turn_at
                 });
 
+                //Check if cards are consistent with the server's
+                this.checkHandConsistency(res.data.hand);
+
                 //Make notification sound to signal it's the user's turn
                 if (this.props.turn_at === this.props.username) {
                     this.makeBeepSound();
@@ -1269,6 +1321,9 @@ class Game extends Component {
                     playable_cards : res.data.playable_cards,
                     turn_at : res.data.turn_at
                 });
+
+                //Check if cards are consistent with the server's
+                this.checkHandConsistency(res.data.hand);
 
                 //Make notification sound to signal it's the user's turn
                 if (this.props.turn_at === this.props.username) {
@@ -1315,6 +1370,9 @@ class Game extends Component {
                     playable_cards : res.data.playable_cards,
                     turn_at : res.data.turn_at
                 });
+
+                //Check if cards are consistent with the server's
+                this.checkHandConsistency(res.data.hand);
 
                 //Make notification sound to signal it's the user's turn
                 if (this.props.turn_at === this.props.username) {
