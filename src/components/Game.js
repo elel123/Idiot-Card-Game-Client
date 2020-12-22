@@ -1662,97 +1662,103 @@ class Game extends Component {
             )
         } else if (this.props.players.length === 3) {
             return (
-                <Container className="p-3">
-                    <Popup open={this.state.popUp} onClose={this.closePopUp} modal closeOnDocumentClick>
-                        <div>{this.state.popUpMsg}</div>
-                    </Popup>
-                    <Container>
-                        <Row><hr></hr></Row>
-                        <Row>
-                            <Col></Col>
-                            <Col>
-                                {this.formatPlayerDisplay(playerNames[2], playerCards[2], playerNumCards[2], playerSwapped[2])}
-                            </Col>
-                            <Col>{this.formatTopButtonDisplays()}</Col>
-                        </Row>
-                        <Row><hr></hr></Row>
-                        <Row><hr></hr></Row>
-                        <Row>
-                            <Col>
-                                <hr className="hidden-line"></hr>
-                                {this.formatPlayerDisplay(playerNames[1], playerCards[1], playerNumCards[1], playerSwapped[1])}
-                                <hr className="hidden-line"></hr>
-                                {this.formatCardSideButtonDisplays()}
-                                <hr className="hidden-line"></hr>
-                                <hr className="hidden-line"></hr>
-                                {this.props.hand.length <= 18 ? this.formatPlayerHandDisplay() : null}
-                            </Col>
-                            <Col>
-                                <hr className="hidden-line"></hr>
-                                {this.formatCenterDisplay()}
-                                <hr className="hidden-line"></hr>
-                                {this.formatPlayerDisplay(playerNames[0], playerCards[0])}
-                                <hr className="hidden-line"></hr>
-                                <hr className="hidden-line"></hr>
-                                {this.props.hand.length > 18 ? this.formatPlayerDisplayLong() : null}
-                            </Col>
-                            <Col>
-                                <hr className="hidden-line"></hr>
-                                <hr className="hidden-line"></hr>
-                                {this.formatChatBoxDisplay()}
-                            </Col>
-                        </Row>
-                        <Row>
-                            <hr></hr>
-                        </Row>
+                <>
+                    {this.formatSound()}
+                    <Container className="p-3">
+                        <Popup open={this.state.popUp} onClose={this.closePopUp} modal closeOnDocumentClick>
+                            <div>{this.state.popUpMsg}</div>
+                        </Popup>
+                        <Container>
+                            <Row><hr></hr></Row>
+                            <Row>
+                                <Col></Col>
+                                <Col>
+                                    {this.formatPlayerDisplay(playerNames[2], playerCards[2], playerNumCards[2], playerSwapped[2])}
+                                </Col>
+                                <Col>{this.formatTopButtonDisplays()}</Col>
+                            </Row>
+                            <Row><hr></hr></Row>
+                            <Row><hr></hr></Row>
+                            <Row>
+                                <Col>
+                                    <hr className="hidden-line"></hr>
+                                    {this.formatPlayerDisplay(playerNames[1], playerCards[1], playerNumCards[1], playerSwapped[1])}
+                                    <hr className="hidden-line"></hr>
+                                    {this.formatCardSideButtonDisplays()}
+                                    <hr className="hidden-line"></hr>
+                                    <hr className="hidden-line"></hr>
+                                    {this.props.hand.length <= 18 ? this.formatPlayerHandDisplay() : null}
+                                </Col>
+                                <Col>
+                                    <hr className="hidden-line"></hr>
+                                    {this.formatCenterDisplay()}
+                                    <hr className="hidden-line"></hr>
+                                    {this.formatPlayerDisplay(playerNames[0], playerCards[0])}
+                                    <hr className="hidden-line"></hr>
+                                    <hr className="hidden-line"></hr>
+                                    {this.props.hand.length > 18 ? this.formatPlayerDisplayLong() : null}
+                                </Col>
+                                <Col>
+                                    <hr className="hidden-line"></hr>
+                                    <hr className="hidden-line"></hr>
+                                    {this.formatChatBoxDisplay()}
+                                </Col>
+                            </Row>
+                            <Row>
+                                <hr></hr>
+                            </Row>
+                        </Container>
                     </Container>
-                </Container>
+                </>
             )
         } else if (this.props.players.length === 4) {
             return (
-                <Container className="p-3">
-                    <Popup open={this.state.popUp} onClose={this.closePopUp} modal closeOnDocumentClick>
-                        <div>{this.state.popUpMsg}</div>
-                    </Popup>
-                    <Container>
-                        <Row><hr></hr></Row>
-                        <Row>
-                            <Col></Col>
-                            <Col>
-                                {this.formatPlayerDisplay(playerNames[2], playerCards[2], playerNumCards[2], playerSwapped[2])}
-                            </Col>
-                            <Col>{this.formatTopButtonDisplays()}</Col>
-                        </Row>
-                        <Row><hr></hr></Row>
-                        <Row><hr></hr></Row>
-                        <Row>
-                            <Col>
-                                {this.formatPlayerDisplay(playerNames[1], playerCards[1], playerNumCards[1], playerSwapped[1])}
-                                <hr className="hidden-line"></hr>
-                                <hr className="hidden-line"></hr>
-                                <hr className="hidden-line"></hr>
-                                {this.formatCardSideButtonDisplays()}
-                                <hr className="hidden-line"></hr>
-                                <hr className="hidden-line"></hr>
-                                {this.props.hand.length <= 18 ? this.formatPlayerHandDisplay() : null}
-                            </Col>
-                            <Col>
-                                <hr className="hidden-line"></hr>
-                                {this.formatCenterDisplay()}
-                                <hr className="hidden-line"></hr>
-                                {this.formatPlayerDisplay(playerNames[0], playerCards[0])}
-                                <hr className="hidden-line"></hr>
-                                <hr className="hidden-line"></hr>
-                                {this.props.hand.length > 18 ? this.formatPlayerDisplayLong() : null}
-                            </Col>
-                            <Col>
-                                {this.formatPlayerDisplay(playerNames[3], playerCards[3], playerNumCards[3], playerSwapped[3])}
-                                <hr className="hidden-line"></hr>
-                                {this.formatChatBoxDisplay()}
-                            </Col>
-                        </Row>
+                <>
+                    {this.formatSound()}
+                    <Container className="p-3">
+                        <Popup open={this.state.popUp} onClose={this.closePopUp} modal closeOnDocumentClick>
+                            <div>{this.state.popUpMsg}</div>
+                        </Popup>
+                        <Container>
+                            <Row><hr></hr></Row>
+                            <Row>
+                                <Col></Col>
+                                <Col>
+                                    {this.formatPlayerDisplay(playerNames[2], playerCards[2], playerNumCards[2], playerSwapped[2])}
+                                </Col>
+                                <Col>{this.formatTopButtonDisplays()}</Col>
+                            </Row>
+                            <Row><hr></hr></Row>
+                            <Row><hr></hr></Row>
+                            <Row>
+                                <Col>
+                                    {this.formatPlayerDisplay(playerNames[1], playerCards[1], playerNumCards[1], playerSwapped[1])}
+                                    <hr className="hidden-line"></hr>
+                                    <hr className="hidden-line"></hr>
+                                    <hr className="hidden-line"></hr>
+                                    {this.formatCardSideButtonDisplays()}
+                                    <hr className="hidden-line"></hr>
+                                    <hr className="hidden-line"></hr>
+                                    {this.props.hand.length <= 18 ? this.formatPlayerHandDisplay() : null}
+                                </Col>
+                                <Col>
+                                    <hr className="hidden-line"></hr>
+                                    {this.formatCenterDisplay()}
+                                    <hr className="hidden-line"></hr>
+                                    {this.formatPlayerDisplay(playerNames[0], playerCards[0])}
+                                    <hr className="hidden-line"></hr>
+                                    <hr className="hidden-line"></hr>
+                                    {this.props.hand.length > 18 ? this.formatPlayerDisplayLong() : null}
+                                </Col>
+                                <Col>
+                                    {this.formatPlayerDisplay(playerNames[3], playerCards[3], playerNumCards[3], playerSwapped[3])}
+                                    <hr className="hidden-line"></hr>
+                                    {this.formatChatBoxDisplay()}
+                                </Col>
+                            </Row>
+                        </Container>
                     </Container>
-                </Container>
+                </>
             )
         } else {
             
