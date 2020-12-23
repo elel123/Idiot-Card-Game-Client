@@ -47,6 +47,11 @@ class ChatBox extends Component {
                         <div className="admin-message" key={index}>{"➤  " + msg.message}</div>
                     )
                 }
+                if (msg.username === 'Bell Notif') {
+                    return (
+                        <div className="bell" key={index}><i><u>{"Bell Notif:"}</u>{" " + msg.message}</i></div>
+                    )
+                }
                 return (
                     <div key={index}><u><b>{msg.username}</b></u>: {msg.message}</div>
                 )

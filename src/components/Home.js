@@ -1,4 +1,5 @@
 import React, { Component } from 'react';
+import ReactDOM from 'react-dom';
 import { connect } from 'react-redux'; //used to take data from redux store and map to props
 import { SERVER } from '../constants/envConstants';
 import axios from 'axios';
@@ -57,6 +58,12 @@ class Home extends Component {
         } else if (this.state.username === "" ) {
             this.setState({
                 popUpMsg: "Please enter a username",
+                popUp: true
+            });
+            return false;
+        } else if (this.state.username === "Bell Notif") {
+            this.setState({
+                popUpMsg: "Username is reserved",
                 popUp: true
             });
             return false;
@@ -148,7 +155,6 @@ class Home extends Component {
 
     displayFindRoom = () => {
         if (!this.usernameCheck()) {
-            this.makeBeepSound();
             return;
         } else {
             let errMsg = this.state.returnFromError;
@@ -165,10 +171,16 @@ class Home extends Component {
                             (<><p>...</p></>)
                         }
                         
-                        <Form>
+                        <Form onSubmit={(e) => {e.preventDefault(); this.handleFindRoom();}}>
                             <Form.Group>
                                 <Form.Label>Enter Room ID</Form.Label>
-                                <Form.Control className="input-field" onChange={this.handleRoomID} value={this.state.room}  type="text" placeholder="Room ID" />
+                                <Form.Control 
+                                    className="input-field" 
+                                    onChange={this.handleRoomID} 
+                                    value={this.state.room}  
+                                    type="text" 
+                                    placeholder="Room ID" 
+                                />
                             </Form.Group>
                         </Form>
                         <div>     
@@ -199,11 +211,16 @@ class Home extends Component {
                     <hr className="hidden-line"></hr>
                     <Jumbotron>
                     <h1 className="header">♠ ♥ Play Idiot ♣ ♦</h1>
-                    <Form>
-
+                    <Form onSubmit={(e) => {e.preventDefault(); this.handleCreateRoom();}}>
                         <Form.Group>
                             <Form.Label>Enter Your Username</Form.Label>
-                            <Form.Control className="input-field" onChange={this.handleUsername} value={this.state.username} type="text" placeholder="Username" />
+                            <Form.Control 
+                                className="input-field" 
+                                onChange={this.handleUsername} 
+                                value={this.state.username} 
+                                type="text" 
+                                placeholder="Username" 
+                            />
                         </Form.Group>
                     </Form>
                     <hr className="hidden-line"></hr>
@@ -218,7 +235,7 @@ class Home extends Component {
                     <hr className="hidden-line"></hr>
                     <hr className="hidden-line"></hr>
                     {/* <Card float={true} blank={this.props.hidden_hand[0]} cardBack={"Idiot"} faceDown={true}/> */}
-                    <p>(Version 2020.12.21)</p>
+                    <p>(Version 2.3.1)</p>
 
                     <Popup open={this.state.popUp} onClose={this.closePopUp} modal closeOnDocumentClick>
                         <div>{this.state.popUpMsg}</div>

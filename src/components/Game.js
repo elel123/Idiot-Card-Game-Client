@@ -5,7 +5,7 @@ import axios from 'axios';
 import Popup from 'reactjs-popup';
 import { socket } from '../socket/socket';
 import { Card } from './Card/Card';
-import { DECK_NUM } from '../constants/constants';
+import { DECK_NUM, PINGS } from '../constants/constants';
 import ChatBox from './ChatBox/ChatBox';
 import { calcCard } from '../utils/calcCard';
 import RLDD from 'react-list-drag-and-drop/lib/RLDD';
@@ -45,6 +45,8 @@ class Game extends Component {
 
         //State to play notif sound
         playSound : false,
+        playPingSound : false,
+        ping: "k-bababooey.wav",
         muted : false,
 
         showHiddenCardMsg : false,
@@ -1396,6 +1398,13 @@ class Game extends Component {
             });
         });
 
+        socket.on('user-pinged', ({username, pinger}) => {
+            if (username === this.props.username) {
+                this.props.updateMessages([...this.props.messages, {username : "Bell Notif", message : `${pinger} has pinged you!`}]);
+                this.makePingSound();
+            }
+        });
+
         socket.on('game-data-lost', () => {
             this.displayInactivityMessage();
         });
@@ -1440,7 +1449,8 @@ class Game extends Component {
         } 
         return (
             <>
-                <p className="player-names"><b>{turnPointer + name} {swapped && !this.state.everyoneSwapped ? '✅' : null}<br />Cards In Hand: {numCards} </b></p>
+                <p className="player-names"><b>{turnPointer + name} <a style={{"cursor" : "pointer"}} onClick={() => {this.sendPing(name);}}>{" 🔔"}</a>
+                {swapped && !this.state.everyoneSwapped ? '✅' : null}<br />Cards In Hand: {numCards} </b></p>
                 {cardDisplay}
             </>
         );
@@ -1564,6 +1574,10 @@ class Game extends Component {
         this.setState({ muted : !this.state.muted });
     }
 
+    sendPing = (username) => {
+        socket.emit('ping-user', {"game_id" : this.props.game_id, "username" : username, "pinger" : this.props.username});
+    }
+
     handleSoundPlaying = () => {
         if (!this.state.gameEnded && !this.state.swapPhase && this.props.turn_at !== this.props.username) {
             this.setState({playSound : false});
@@ -1572,20 +1586,39 @@ class Game extends Component {
 
     formatSound = () => {
         return (
-            <Sound
-                url={(this.state.swapPhase) ? "meep-short.wav" : "meep-long.wav"}
-                playStatus={(this.state.playSound) ? Sound.status.PLAYING : Sound.status.STOPPED}
-                playFromPosition={0 /* in milliseconds */}
-                // onLoading={this.handleSongLoading}
-                onPlaying={this.handleSoundPlaying} 
-                onFinishedPlaying={() => {this.setState({playSound : false})}}
-            />
+            <>
+                <Sound
+                    url={(this.state.swapPhase) ? "meep-short.wav" : "meep-long.wav"}
+                    playStatus={(this.state.playSound) ? Sound.status.PLAYING : Sound.status.STOPPED}
+                    playFromPosition={0 /* in milliseconds */}
+                    // onLoading={this.handleSongLoading}
+                    onPlaying={this.handleSoundPlaying} 
+                    onFinishedPlaying={() => {this.setState({playSound : false})}}
+                />
+                <Sound
+                    url={this.state.ping}
+                    playStatus={(this.state.playPingSound) ? Sound.status.PLAYING : Sound.status.STOPPED}
+                    // onLoading={this.handleSongLoading}
+                    // onPlaying={} 
+                    onFinishedPlaying={() => {this.setState({playPingSound : false})}}
+                />
+            </>
         )
     }
+
  
     makeBeepSound = () => {
         if (!this.state.muted) {
             this.setState({playSound : true});
+        }
+    }
+
+    makePingSound = () => {
+        if (!this.state.muted && !this.state.playPingSound) {
+            this.setState({
+                playPingSound : true,
+                ping : PINGS[Math.floor(Math.random()*PINGS.length)]
+            });
         }
     }
 
